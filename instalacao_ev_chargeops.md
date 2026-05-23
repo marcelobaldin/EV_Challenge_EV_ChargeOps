@@ -42,13 +42,31 @@ venv_ev_chargeops\Scripts\activate
 source venv_ev_chargeops/bin/activate
 ```
 
-### 3. Instalar Flask
+### 3. Instalar dependencias
 
 ```bash
-pip install flask
+pip install flask google-genai
 ```
 
-### 4. Executar a aplicacao
+### 4. Configurar Sindico Virtual com IA (opcional)
+
+O Sindico Virtual funciona sem configuracao (respostas locais). Para habilitar IA generativa com Google Gemini (gratuito):
+
+1. Acesse https://aistudio.google.com/apikey
+2. Clique em "Create API Key"
+3. Exporte a variavel antes de executar:
+
+**Mac / Linux:**
+```bash
+export GEMINI_API_KEY="sua-chave-aqui"
+```
+
+**Windows:**
+```bash
+set GEMINI_API_KEY=sua-chave-aqui
+```
+
+### 5. Executar a aplicacao
 
 ```bash
 python app_ev_chargeops.py

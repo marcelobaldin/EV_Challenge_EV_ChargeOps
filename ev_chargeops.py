@@ -431,15 +431,91 @@ class MotorIA:
     # ---- CONVERSACAO (SINDICO VIRTUAL) ----
 
     @staticmethod
+    @staticmethod
+    def _gemini_disponivel() -> bool:
+        """Verifica se a API do Google Gemini esta configurada."""
+        return bool(os.environ.get("GEMINI_API_KEY"))
+
+    @staticmethod
+    def _chamar_gemini(pergunta: str, dados_condominio: dict) -> str:
+        """Chama o Google Gemini 2.0 Flash com contexto do condominio via RAG."""
+        try:
+            from google import genai
+            from google.genai import types
+        except ImportError:
+            return ""
+
+        api_key = os.environ.get("GEMINI_API_KEY", "")
+        if not api_key:
+            return ""
+
+        try:
+            client = genai.Client(api_key=api_key)
+
+            contexto = (
+                "Voce e o Sindico Virtual do EV ChargeOps, uma plataforma de gestao "
+                "de recarga de veiculos eletricos em condominios. Responda de forma "
+                "clara, objetiva e em portugues do Brasil. Use os dados reais abaixo "
+                "para embasar suas respostas. Sugira acoes praticas quando possivel.\n\n"
+                "DADOS DO CONDOMINIO:\n"
+                f"- Consumo total: {dados_condominio.get('consumo_total_kwh', 0):.1f} kWh\n"
+                f"- Custo total: R$ {dados_condominio.get('custo_total', 0):.2f}\n"
+                f"- Unidades ativas: {dados_condominio.get('num_unidades_ativas', 0)}\n"
+                f"- Carregadores disponiveis: {dados_condominio.get('carregadores_disponiveis', 0)}"
+                f"/{dados_condominio.get('total_carregadores', 0)}\n"
+                f"- Faturas abertas: {dados_condominio.get('faturas_abertas', 0)}\n"
+                f"- Valor pendente: R$ {dados_condominio.get('total_pendente', 0):.2f}\n"
+                f"- Tendencia de consumo: {dados_condominio.get('tendencia', 'estavel')}\n"
+                f"- Previsao mensal: {dados_condominio.get('previsao_mensal_kwh', 0):.0f} kWh\n"
+            )
+
+            anomalias = dados_condominio.get("anomalias", [])
+            if anomalias:
+                contexto += "- Anomalias detectadas:\n"
+                for a in anomalias[:5]:
+                    contexto += f"  * {a}\n"
+
+            contexto += (
+                "\nREGRAS DE TARIFA (ANEEL):\n"
+                "- Fora ponta (22h-17h): tarifa base R$ 0,85/kWh\n"
+                "- Intermediaria (17h-18h e 21h-22h): +20%\n"
+                "- Ponta (18h-21h dias uteis): +50%\n"
+                "- Taxa administrativa: 5%\n"
+            )
+
+            resp = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=contexto + f"\nPERGUNTA DO SINDICO: {pergunta}",
+                config=types.GenerateContentConfig(
+                    max_output_tokens=1024,
+                    temperature=0.7,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                ),
+            )
+            return resp.text.strip() if resp and resp.text else ""
+        except Exception as e:
+            print(f"  [Gemini] Erro: {e}")
+            return ""
+
+    @staticmethod
     def sindico_virtual(pergunta: str, dados_condominio: dict) -> str:
         """
-        Sindico Virtual - Agente conversacional NLP simplificado.
-        Traduz dados tecnicos em respostas gerenciais simples.
-        Utiliza correspondencia de palavras-chave para classificar intencoes.
+        Sindico Virtual - Agente conversacional com IA generativa.
+        Usa Google Gemini quando disponivel (GEMINI_API_KEY configurada),
+        com fallback para respostas locais baseadas em regras.
         """
+        if MotorIA._gemini_disponivel():
+            resposta = MotorIA._chamar_gemini(pergunta, dados_condominio)
+            if resposta:
+                return resposta
+
+        return MotorIA._sindico_virtual_local(pergunta, dados_condominio)
+
+    @staticmethod
+    def _sindico_virtual_local(pergunta: str, dados_condominio: dict) -> str:
+        """Fallback local baseado em regras quando Gemini nao esta disponivel."""
         pergunta_lower = pergunta.lower().strip()
 
-        # Intencoes e respostas
         if any(p in pergunta_lower for p in ["consumo", "gasto", "quanto", "kwh"]):
             total = dados_condominio.get("consumo_total_kwh", 0)
             custo = dados_condominio.get("custo_total", 0)

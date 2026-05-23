@@ -55,11 +55,11 @@ def main():
         pip_path = os.path.join(venv_path, 'bin', 'pip')
         python_path = os.path.join(venv_path, 'bin', 'python')
 
-    # 2. Instalar Flask
+    # 2. Instalar dependencias
     print("\n[2/3] Instalando dependencias...")
-    subprocess.run([pip_path, 'install', '--quiet', 'flask'],
+    subprocess.run([pip_path, 'install', '--quiet', 'flask', 'google-genai'],
                    check=True, capture_output=True)
-    print("  Flask instalado.")
+    print("  Flask + Google GenAI instalados.")
 
     # 3. Executar
     print("\n[3/3] Iniciando EV ChargeOps...")
