@@ -614,39 +614,46 @@
            ============================================================ */
         .chat-toggle {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 48px;
-            height: 48px;
+            bottom: 28px;
+            right: 28px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             background: linear-gradient(135deg, var(--accent), var(--accent2));
-            border: none;
+            border: 3px solid rgba(255,255,255,0.2);
             cursor: pointer;
-            z-index: 1000;
+            z-index: 9999;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 16px rgba(34, 197, 94, 0.35);
+            box-shadow: 0 4px 20px rgba(34, 197, 94, 0.5), 0 0 40px rgba(34, 197, 94, 0.15);
             transition: all 0.3s;
+            animation: chatPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes chatPulse {
+            0%, 100% { box-shadow: 0 4px 20px rgba(34, 197, 94, 0.5), 0 0 40px rgba(34, 197, 94, 0.15); }
+            50% { box-shadow: 0 4px 25px rgba(34, 197, 94, 0.7), 0 0 50px rgba(34, 197, 94, 0.25); }
         }
 
         .chat-toggle:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 24px rgba(34, 197, 94, 0.45);
+            transform: scale(1.15);
+            box-shadow: 0 6px 30px rgba(34, 197, 94, 0.6);
+            animation: none;
         }
 
         .chat-toggle svg { fill: #fff; }
 
         .chat-window {
             position: fixed;
-            bottom: 84px;
-            right: 24px;
-            width: 350px;
-            height: 450px;
+            bottom: 100px;
+            right: 28px;
+            width: 370px;
+            height: 480px;
             background: var(--bg-sidebar);
             border: 1px solid var(--border-active);
             border-radius: 16px;
-            z-index: 1000;
+            z-index: 9999;
             display: none;
             flex-direction: column;
             overflow: hidden;
@@ -903,6 +910,10 @@
             <div class="nav-item" data-section="sec-sessoes-todas" onclick="showSection('sec-sessoes-todas', this)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 Todas as Sessoes
+            </div>
+            <div class="nav-item" onclick="openChat()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                Sindico Virtual
             </div>
             <div class="nav-item" data-section="sec-config" onclick="showSection('sec-config', this)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -2021,6 +2032,14 @@ function toggleChat() {
     if (win.classList.contains('open')) {
         document.getElementById('chatInput').focus();
     }
+}
+
+function openChat() {
+    const win = document.getElementById('chatWindow');
+    if (!win.classList.contains('open')) {
+        win.classList.add('open');
+    }
+    document.getElementById('chatInput').focus();
 }
 
 async function sendChat() {
