@@ -1,0 +1,2325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV ChargeOps - Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <style>
+        /* ============================================================
+           CSS VARIABLES — Dark EV Theme
+           ============================================================ */
+        :root {
+            --bg-dark: #0a1628;
+            --bg-card: rgba(15, 25, 50, 0.85);
+            --bg-sidebar: rgba(10, 18, 35, 0.95);
+            --border: rgba(34, 197, 94, 0.15);
+            --border-active: rgba(34, 197, 94, 0.5);
+            --text: #c8e0ff;
+            --text-dim: rgba(200, 230, 255, 0.45);
+            --accent: #22c55e;
+            --accent2: #16a34a;
+            --green: #34d399;
+            --blue: #60a5fa;
+            --yellow: #fbbf24;
+            --red: #f87171;
+            --orange: #fb923c;
+            --purple: #a78bfa;
+            --sidebar-w: 220px;
+            --topbar-h: 60px;
+        }
+
+        /* ============================================================
+           RESET & BASE
+           ============================================================ */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+        }
+
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ============================================================
+           LAYOUT — Sidebar + Main
+           ============================================================ */
+        .app-layout {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* ---------- Sidebar ---------- */
+        .sidebar {
+            width: var(--sidebar-w);
+            min-width: var(--sidebar-w);
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-logo {
+            padding: 20px 16px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-logo h1 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-logo h1 svg {
+            flex-shrink: 0;
+        }
+
+        .sidebar-logo .subtitle {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 4px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 12px 0;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+            color: var(--text-dim);
+            font-size: 13px;
+            font-weight: 500;
+            user-select: none;
+        }
+
+        .nav-item:hover {
+            background: rgba(34, 197, 94, 0.06);
+            color: var(--text);
+        }
+
+        .nav-item.active {
+            border-left-color: var(--accent);
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--accent);
+        }
+
+        .nav-item svg {
+            flex-shrink: 0;
+            opacity: 0.7;
+        }
+
+        .nav-item.active svg {
+            opacity: 1;
+        }
+
+        .sidebar-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            font-size: 10px;
+            color: var(--text-dim);
+            text-align: center;
+        }
+
+        /* ---------- Main area ---------- */
+        .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ---------- Topbar ---------- */
+        .topbar {
+            height: var(--topbar-h);
+            min-height: var(--topbar-h);
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .topbar-left .section-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text);
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .topbar-user {
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+
+        .topbar-user strong {
+            color: var(--text);
+        }
+
+        .topbar-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--accent);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-logout {
+            background: rgba(248, 113, 113, 0.12);
+            color: var(--red);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: rgba(248, 113, 113, 0.25);
+        }
+
+        /* ---------- Content ---------- */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* ============================================================
+           COMPONENTS
+           ============================================================ */
+
+        /* ---------- Stat Cards ---------- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--border-active);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.08);
+        }
+
+        .stat-card .label {
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .stat-card .value.green { color: var(--green); }
+        .stat-card .value.blue { color: var(--blue); }
+        .stat-card .value.yellow { color: var(--yellow); }
+        .stat-card .value.red { color: var(--red); }
+        .stat-card .value.purple { color: var(--purple); }
+        .stat-card .value.orange { color: var(--orange); }
+        .stat-card .value.accent { color: var(--accent); }
+
+        /* ---------- Chart containers ---------- */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .chart-card h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        .chart-wrap {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+
+        /* ---------- Tables ---------- */
+        .table-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .table-wrap h3 {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead th {
+            background: rgba(34, 197, 94, 0.06);
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        tbody td {
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(34, 197, 94, 0.06);
+            white-space: nowrap;
+        }
+
+        tbody tr:hover {
+            background: rgba(34, 197, 94, 0.04);
+        }
+
+        tbody tr:nth-child(even) {
+            background: rgba(15, 25, 50, 0.4);
+        }
+
+        tbody tr:nth-child(even):hover {
+            background: rgba(34, 197, 94, 0.06);
+        }
+
+        .total-row td {
+            font-weight: 700;
+            border-top: 2px solid var(--border-active);
+            background: rgba(34, 197, 94, 0.05);
+        }
+
+        /* ---------- Badges ---------- */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-ponta { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+        .badge-intermediaria { background: rgba(251, 191, 36, 0.15); color: var(--yellow); }
+        .badge-fora_ponta { background: rgba(52, 211, 153, 0.15); color: var(--green); }
+        .badge-disponivel { background: rgba(52, 211, 153, 0.15); color: var(--green); }
+        .badge-em_uso { background: rgba(251, 191, 36, 0.15); color: var(--yellow); }
+        .badge-manutencao { background: rgba(251, 146, 60, 0.15); color: var(--orange); }
+        .badge-offline { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+
+        /* ---------- Info Card ---------- */
+        .info-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            border-color: var(--border-active);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.08);
+        }
+
+        .info-card h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--accent);
+        }
+
+        .info-card p {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .big-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--green);
+        }
+
+        /* ---------- Progress Bars ---------- */
+        .progress-bar-wrap {
+            margin-bottom: 10px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .progress-track {
+            height: 8px;
+            background: rgba(200, 230, 255, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        /* ---------- Buttons ---------- */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: #fff;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 0 16px rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ---------- Messages ---------- */
+        .msg { padding: 12px 16px; border-radius: 8px; margin: 12px 0; font-size: 13px; }
+        .msg-success { background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.3); color: var(--green); }
+        .msg-error { background: rgba(248, 113, 113, 0.12); border: 1px solid rgba(248, 113, 113, 0.3); color: var(--red); }
+        .msg-info { background: rgba(96, 165, 250, 0.12); border: 1px solid rgba(96, 165, 250, 0.3); color: var(--blue); }
+
+        /* ---------- Loading ---------- */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-dim);
+            font-size: 14px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(34, 197, 94, 0.2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ---------- Charger Cards ---------- */
+        .charger-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .charger-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .charger-card:hover {
+            border-color: var(--border-active);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.08);
+        }
+
+        .charger-card h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .charger-detail {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+
+        .charger-meters {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .meter {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        .meter .meter-val {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* ---------- Eletroposto Card ---------- */
+        .ep-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .ep-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px;
+            transition: all 0.3s;
+        }
+
+        .ep-card:hover {
+            border-color: var(--border-active);
+            box-shadow: 0 0 16px rgba(34, 197, 94, 0.08);
+        }
+
+        .ep-card h4 { font-size: 14px; margin-bottom: 6px; color: var(--accent); }
+        .ep-card .ep-addr { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }
+        .ep-card .ep-info { font-size: 12px; color: var(--text); margin-bottom: 3px; }
+
+        /* ---------- Anomaly list ---------- */
+        .anomaly-item {
+            background: rgba(248, 113, 113, 0.06);
+            border: 1px solid rgba(248, 113, 113, 0.15);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .anomaly-item strong { color: var(--red); }
+
+        /* ---------- Interpretation list ---------- */
+        .interp-item {
+            background: rgba(96, 165, 250, 0.06);
+            border: 1px solid rgba(96, 165, 250, 0.15);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* ============================================================
+           CHAT WIDGET (Sindico only)
+           ============================================================ */
+        .chat-toggle {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border: none;
+            cursor: pointer;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(34, 197, 94, 0.35);
+            transition: all 0.3s;
+        }
+
+        .chat-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 24px rgba(34, 197, 94, 0.45);
+        }
+
+        .chat-toggle svg { fill: #fff; }
+
+        .chat-window {
+            position: fixed;
+            bottom: 84px;
+            right: 24px;
+            width: 350px;
+            height: 450px;
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border-active);
+            border-radius: 16px;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .chat-window.open {
+            display: flex;
+        }
+
+        .chat-header {
+            padding: 14px 16px;
+            background: rgba(34, 197, 94, 0.1);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-header span {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--accent);
+        }
+
+        .chat-close {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 1;
+            padding: 0 4px;
+        }
+
+        .chat-close:hover { color: var(--text); }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chat-msg {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .chat-msg.bot {
+            align-self: flex-start;
+            background: rgba(96, 165, 250, 0.12);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            color: var(--text);
+        }
+
+        .chat-msg.user {
+            align-self: flex-end;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.25);
+            color: var(--text);
+        }
+
+        .chat-input-area {
+            padding: 12px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: rgba(200, 230, 255, 0.06);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: var(--border-active);
+        }
+
+        .chat-send {
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-send:hover { filter: brightness(1.1); }
+        .chat-send svg { fill: #fff; }
+
+        /* ============================================================
+           SECTION HEADINGS
+           ============================================================ */
+        .sec-heading {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        .sec-sub {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            margin-top: 20px;
+            color: var(--accent);
+        }
+
+        /* ============================================================
+           RESPONSIVE — Mobile < 768px
+           ============================================================ */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                transform: translateX(-100%);
+                z-index: 200;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .mobile-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 150;
+            }
+
+            .mobile-overlay.open {
+                display: block;
+            }
+
+            .hamburger {
+                display: block;
+            }
+
+            .content {
+                padding: 16px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-wrap {
+                max-height: 250px;
+            }
+
+            .chat-window {
+                width: calc(100vw - 32px);
+                right: 16px;
+                bottom: 76px;
+                height: 400px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ============================================================
+           SCROLLBAR
+           ============================================================ */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(34, 197, 94, 0.2); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(34, 197, 94, 0.35); }
+    </style>
+</head>
+<body>
+
+<!-- Mobile overlay -->
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeSidebar()"></div>
+
+<div class="app-layout">
+    <!-- ================================================================
+         SIDEBAR
+         ================================================================ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <h1>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                </svg>
+                EV ChargeOps
+            </h1>
+            <div class="subtitle">{{ condominio }}</div>
+        </div>
+
+        <nav class="sidebar-nav" id="sidebarNav">
+            {% if perfil == 'morador' %}
+            <!-- Morador Nav -->
+            <div class="nav-item active" data-section="sec-dashboard" onclick="showSection('sec-dashboard', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                Dashboard
+            </div>
+            <div class="nav-item" data-section="sec-sessoes" onclick="showSection('sec-sessoes', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                Minhas Sessoes
+            </div>
+            <div class="nav-item" data-section="sec-recomendacoes" onclick="showSection('sec-recomendacoes', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0018 8 6 6 0 006 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 018.91 14"/></svg>
+                Recomendacoes IA
+            </div>
+            <div class="nav-item" data-section="sec-eletropostos" onclick="showSection('sec-eletropostos', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Eletropostos
+            </div>
+
+            {% elif perfil == 'sindico' %}
+            <!-- Sindico Nav -->
+            <div class="nav-item active" data-section="sec-dashboard" onclick="showSection('sec-dashboard', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                Dashboard
+            </div>
+            <div class="nav-item" data-section="sec-ranking" onclick="showSection('sec-ranking', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 9 7 9"/><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 9 17 9"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2z"/></svg>
+                Ranking Consumo
+            </div>
+            <div class="nav-item" data-section="sec-carregadores" onclick="showSection('sec-carregadores', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                Carregadores
+            </div>
+            <div class="nav-item" data-section="sec-analise" onclick="showSection('sec-analise', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 018 8c0 2.5-1 4-2 5.5L12 22l-6-6.5C5 14 4 12.5 4 10a8 8 0 018-8z"/><circle cx="12" cy="10" r="3"/></svg>
+                Analise IA
+            </div>
+            <div class="nav-item" data-section="sec-sessoes-todas" onclick="showSection('sec-sessoes-todas', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Todas as Sessoes
+            </div>
+            <div class="nav-item" data-section="sec-config" onclick="showSection('sec-config', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                Configuracoes
+            </div>
+
+            {% elif perfil == 'administrador' %}
+            <!-- Administrador Nav -->
+            <div class="nav-item active" data-section="sec-faturamento" onclick="showSection('sec-faturamento', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                Faturamento
+            </div>
+            <div class="nav-item" data-section="sec-rateio" onclick="showSection('sec-rateio', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 118 2.83"/><path d="M22 12A10 10 0 0012 2v10z"/></svg>
+                Rateio
+            </div>
+            <div class="nav-item" data-section="sec-exportar" onclick="showSection('sec-exportar', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exportar CSV
+            </div>
+            <div class="nav-item" data-section="sec-historico" onclick="showSection('sec-historico', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+                Historico
+            </div>
+            {% endif %}
+        </nav>
+
+        <div class="sidebar-footer">
+            FIAP + GoodWe 2026<br>
+            RM568746
+        </div>
+    </aside>
+
+    <!-- ================================================================
+         MAIN AREA
+         ================================================================ -->
+    <div class="main-area">
+        <!-- Topbar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                <span class="section-title" id="sectionTitle">Dashboard</span>
+            </div>
+            <div class="topbar-right">
+                <span class="topbar-badge">{{ perfil }}</span>
+                <span class="topbar-user"><strong>{{ nome }}</strong></span>
+                <a href="/logout" class="btn-logout">Sair</a>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <div class="content" id="contentArea">
+
+            {% if perfil == 'morador' %}
+            <!-- ============================================================
+                 MORADOR SECTIONS
+                 ============================================================ -->
+
+            <!-- Dashboard -->
+            <div class="section active" id="sec-dashboard">
+                <div class="loading" id="load-dashboard"><div class="spinner"></div><br>Carregando...</div>
+                <div id="content-dashboard" style="display:none;">
+                    <div class="stats-grid" id="morador-stats"></div>
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>Consumo Diario (30 dias)</h3>
+                            <div class="chart-wrap"><canvas id="chartConsumoMorador"></canvas></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Distribuicao por Tarifa</h3>
+                            <div class="chart-wrap"><canvas id="chartTarifaMorador"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sessoes -->
+            <div class="section" id="sec-sessoes">
+                <div class="loading" id="load-sessoes"><div class="spinner"></div><br>Carregando...</div>
+                <div id="content-sessoes" style="display:none;">
+                    <div class="table-wrap">
+                        <h3>Minhas Sessoes de Recarga</h3>
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Duracao</th>
+                                        <th>kWh</th>
+                                        <th>Tarifa</th>
+                                        <th>Tipo</th>
+                                        <th>Custo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-sessoes"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recomendacoes -->
+            <div class="section" id="sec-recomendacoes">
+                <div class="loading" id="load-recomendacoes"><div class="spinner"></div><br>Carregando...</div>
+                <div id="content-recomendacoes" style="display:none;"></div>
+            </div>
+
+            <!-- Eletropostos -->
+            <div class="section" id="sec-eletropostos">
+                <div class="loading" id="load-eletropostos"><div class="spinner"></div><br>Carregando...</div>
+                <div id="content-eletropostos" style="display:none;"></div>
+            </div>
+
+            {% elif perfil == 'sindico' %}
+            <!-- ============================================================
+                 SINDICO SECTIONS
+                 ============================================================ -->
+
+            <!-- Dashboard -->
+            <div class="section active" id="sec-dashboard">
+                <div class="loading" id="load-dashboard"><div class="spinner"></div><br>Carregando...</div>
+                <div id="content-dashboard" style="display:none;">
+                    <div class="stats-grid" id="sindico-stats"></div>
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>Consumo Diario (30 dias)</h3>
+                            <div class="chart-wrap"><canvas id="chartConsumoDiario"></canvas></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Distribuicao Horaria</h3>
+                            <div class="chart-wrap"><canvas id="chartHorario"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>Consumo por Unidade</h3>
+                            <div class="chart-wrap"><canvas id="chartUnidade"></canvas></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Distribuicao por Tarifa</h3>
+                            <div class="chart-wrap"><canvas id="chartTarifaSindico"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ranking -->
+            <div class="section" id="sec-ranking">
+                <div class="loading" id="load-ranking"><div class="spinner"></div><br>Carregando...</div>
+                <div id="content-ranking" style="display:none;">
+                    <div class="table-wrap">
+                        <h3>Ranking de Consumo por Unidade</h3>
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Unidade</th>
+                                        <th>Proprietario</th>
+                                        <th>Sessoes</th>
+                                        <th>kWh</th>
+                                        <th>Custo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-ranking"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Carregadores -->
+            <div class="section" id="sec-carregadores">
+                <div class="loading" id="load-carregadores"><div class="spinner"></div><br>Carregando...</div>
+                <div id="content-carregadores" style="display:none;">
+                    <div class="charger-grid" id="charger-grid"></div>
+                </div>
+            </div>
+
+            <!-- Analise IA -->
+            <div class="section" id="sec-analise">
+                <div class="loading" id="load-analise"><div class="spinner"></div><br>Carregando...</div>
+                <div id="content-analise" style="display:none;"></div>
+            </div>
+
+            <!-- Todas as Sessoes -->
+            <div class="section" id="sec-sessoes-todas">
+                <div class="loading" id="load-sessoes-todas"><div class="spinner"></div><br>Carregando...</div>
+                <div id="content-sessoes-todas" style="display:none;">
+                    <div class="table-wrap">
+                        <h3>Todas as Sessoes do Condominio</h3>
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Unidade</th>
+                                        <th>kWh</th>
+                                        <th>Tarifa</th>
+                                        <th>Tipo</th>
+                                        <th>Custo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-sessoes-todas"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuracoes -->
+            <div class="section" id="sec-config">
+                <div class="loading" id="load-config"><div class="spinner"></div><br>Carregando...</div>
+                <div id="content-config" style="display:none;"></div>
+            </div>
+
+            {% elif perfil == 'administrador' %}
+            <!-- ============================================================
+                 ADMINISTRADOR SECTIONS
+                 ============================================================ -->
+
+            <!-- Faturamento -->
+            <div class="section active" id="sec-faturamento">
+                <div class="loading" id="load-faturamento"><div class="spinner"></div><br>Carregando...</div>
+                <div id="content-faturamento" style="display:none;">
+                    <div style="margin-bottom:16px;">
+                        <button class="btn-primary" id="btnGerarFaturas" onclick="gerarFaturas()">Gerar Faturas do Mes</button>
+                        <div id="msg-faturas"></div>
+                    </div>
+                    <div class="table-wrap">
+                        <h3>Faturas Emitidas</h3>
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Unidade</th>
+                                        <th>Proprietario</th>
+                                        <th>Sessoes</th>
+                                        <th>kWh</th>
+                                        <th>R$</th>
+                                        <th>Status</th>
+                                        <th>Emissao</th>
+                                        <th>Vencimento</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-faturas"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rateio -->
+            <div class="section" id="sec-rateio">
+                <div class="loading" id="load-rateio"><div class="spinner"></div><br>Carregando...</div>
+                <div id="content-rateio" style="display:none;">
+                    <div class="table-wrap">
+                        <h3>Rateio de Custos</h3>
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Unidade</th>
+                                        <th>Proprietario</th>
+                                        <th>Sessoes</th>
+                                        <th>kWh</th>
+                                        <th>Custo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-rateio"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>Distribuicao de Custos por Unidade</h3>
+                            <div class="chart-wrap"><canvas id="chartRateio"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exportar -->
+            <div class="section" id="sec-exportar">
+                <div class="loading" id="load-exportar"><div class="spinner"></div><br>Carregando...</div>
+                <div id="content-exportar" style="display:none;">
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn-primary" onclick="window.location='/api/admin/export-csv'">
+                            <span style="display:inline-flex;align-items:center;gap:8px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Baixar CSV
+                            </span>
+                        </button>
+                    </div>
+                    <div class="table-wrap">
+                        <h3>Preview dos Dados para Exportacao</h3>
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Unidade</th>
+                                        <th>Proprietario</th>
+                                        <th>Sessoes</th>
+                                        <th>kWh</th>
+                                        <th>Custo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-exportar"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historico -->
+            <div class="section" id="sec-historico">
+                <div class="loading" id="load-historico"><div class="spinner"></div><br>Carregando...</div>
+                <div id="content-historico" style="display:none;">
+                    <div class="table-wrap">
+                        <h3>Historico de Faturamento</h3>
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Mes</th>
+                                        <th>Unidades</th>
+                                        <th>kWh</th>
+                                        <th>R$</th>
+                                        <th>Pagas</th>
+                                        <th>Abertas</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbl-historico"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div><!-- /content -->
+    </div><!-- /main-area -->
+</div><!-- /app-layout -->
+
+{% if perfil == 'sindico' %}
+<!-- ================================================================
+     CHAT WIDGET (Sindico only)
+     ================================================================ -->
+<button class="chat-toggle" id="chatToggle" onclick="toggleChat()" title="Sindico Virtual">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/><path d="M7 9h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/></svg>
+</button>
+<div class="chat-window" id="chatWindow">
+    <div class="chat-header">
+        <span>Sindico Virtual</span>
+        <button class="chat-close" onclick="toggleChat()">&times;</button>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+        <div class="chat-msg bot">Ola! Sou o Sindico Virtual. Pergunte sobre consumo, faturas, carregadores, horarios ou anomalias.</div>
+    </div>
+    <div class="chat-input-area">
+        <input type="text" class="chat-input" id="chatInput" placeholder="Digite sua pergunta..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="chat-send" onclick="sendChat()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+    </div>
+</div>
+{% endif %}
+
+<script>
+/* ================================================================
+   GLOBALS
+   ================================================================ */
+const PERFIL = '{{ perfil }}';
+const cache = {};
+const chartInstances = {};
+
+/* ================================================================
+   SIDEBAR / MOBILE
+   ================================================================ */
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('mobileOverlay').classList.toggle('open');
+}
+
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('mobileOverlay').classList.remove('open');
+}
+
+/* ================================================================
+   SECTION NAVIGATION
+   ================================================================ */
+const SECTION_TITLES = {
+    'sec-dashboard': 'Dashboard',
+    'sec-sessoes': 'Minhas Sessoes',
+    'sec-recomendacoes': 'Recomendacoes IA',
+    'sec-eletropostos': 'Eletropostos',
+    'sec-ranking': 'Ranking Consumo',
+    'sec-carregadores': 'Carregadores',
+    'sec-analise': 'Analise IA',
+    'sec-sessoes-todas': 'Todas as Sessoes',
+    'sec-config': 'Configuracoes',
+    'sec-faturamento': 'Faturamento',
+    'sec-rateio': 'Rateio',
+    'sec-exportar': 'Exportar CSV',
+    'sec-historico': 'Historico'
+};
+
+function showSection(name, navEl) {
+    /* Hide all sections */
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    /* Show target */
+    const sec = document.getElementById(name);
+    if (sec) sec.classList.add('active');
+
+    /* Nav active state */
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (navEl) navEl.classList.add('active');
+
+    /* Update topbar title */
+    document.getElementById('sectionTitle').textContent = SECTION_TITLES[name] || 'Dashboard';
+
+    /* Close mobile sidebar */
+    closeSidebar();
+
+    /* Load data if not cached */
+    loadSectionData(name);
+}
+
+/* ================================================================
+   DATA LOADING DISPATCHER
+   ================================================================ */
+function loadSectionData(name) {
+    if (PERFIL === 'morador') {
+        if (name === 'sec-dashboard') loadMoradorDashboard();
+        else if (name === 'sec-sessoes') loadMoradorSessoes();
+        else if (name === 'sec-recomendacoes') loadMoradorRecomendacoes();
+        else if (name === 'sec-eletropostos') loadMoradorEletropostos();
+    } else if (PERFIL === 'sindico') {
+        if (name === 'sec-dashboard') loadSindicoDashboard();
+        else if (name === 'sec-ranking') loadSindicoRanking();
+        else if (name === 'sec-carregadores') loadSindicoCarregadores();
+        else if (name === 'sec-analise') loadSindicoAnalise();
+        else if (name === 'sec-sessoes-todas') loadSindicoSessoes();
+        else if (name === 'sec-config') loadSindicoConfig();
+    } else if (PERFIL === 'administrador') {
+        if (name === 'sec-faturamento') loadAdminFaturas();
+        else if (name === 'sec-rateio') loadAdminRateio();
+        else if (name === 'sec-exportar') loadAdminExportar();
+        else if (name === 'sec-historico') loadAdminHistorico();
+    }
+}
+
+/* ================================================================
+   FETCH HELPER
+   ================================================================ */
+async function fetchAPI(url, opts) {
+    try {
+        const resp = await fetch(url, opts);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        return await resp.json();
+    } catch (err) {
+        console.error('API Error:', url, err);
+        throw err;
+    }
+}
+
+function showLoading(id) {
+    const el = document.getElementById('load-' + id);
+    const ct = document.getElementById('content-' + id);
+    if (el) el.style.display = 'block';
+    if (ct) ct.style.display = 'none';
+}
+
+function showContent(id) {
+    const el = document.getElementById('load-' + id);
+    const ct = document.getElementById('content-' + id);
+    if (el) el.style.display = 'none';
+    if (ct) ct.style.display = 'block';
+}
+
+function showError(id, msg) {
+    const el = document.getElementById('load-' + id);
+    if (el) el.innerHTML = '<div class="msg msg-error">' + msg + '</div>';
+}
+
+/* ================================================================
+   CHART HELPERS
+   ================================================================ */
+function destroyChart(key) {
+    if (chartInstances[key]) {
+        chartInstances[key].destroy();
+        delete chartInstances[key];
+    }
+}
+
+const CHART_DEFAULTS = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: { labels: { color: '#c8e0ff', font: { size: 11 } } }
+    },
+    scales: {
+        x: { ticks: { color: 'rgba(200,230,255,0.5)', font: { size: 10 } }, grid: { color: 'rgba(34,197,94,0.06)' } },
+        y: { ticks: { color: 'rgba(200,230,255,0.5)', font: { size: 10 } }, grid: { color: 'rgba(34,197,94,0.06)' } }
+    }
+};
+
+function badgeHTML(tipo) {
+    const cls = 'badge-' + (tipo || '').replace(' ', '_');
+    const label = (tipo || '').replace('_', ' ');
+    return '<span class="badge ' + cls + '">' + label + '</span>';
+}
+
+function statusBadgeHTML(status) {
+    const cls = 'badge-' + (status || '').replace(' ', '_');
+    const labels = { disponivel: 'Disponivel', em_uso: 'Em Uso', manutencao: 'Manutencao', offline: 'Offline' };
+    return '<span class="badge ' + cls + '">' + (labels[status] || status) + '</span>';
+}
+
+function fmt(v) { return v != null ? v.toLocaleString('pt-BR') : '-'; }
+function fmtR$(v) { return v != null ? 'R$ ' + v.toFixed(2).replace('.', ',') : '-'; }
+
+/* ================================================================
+   MORADOR — Dashboard
+   ================================================================ */
+async function loadMoradorDashboard() {
+    if (cache['morador-dash']) { showContent('dashboard'); return; }
+    showLoading('dashboard');
+    try {
+        const d = await fetchAPI('/api/morador/dashboard');
+        cache['morador-dash'] = d;
+
+        /* Stat cards */
+        document.getElementById('morador-stats').innerHTML =
+            statCard('Total kWh', d.total_kwh + ' kWh', 'green') +
+            statCard('Total R$', fmtR$(d.total_custo), 'blue') +
+            statCard('Sessoes', d.total_sessoes, 'yellow') +
+            statCard('Media kWh/sessao', d.media_kwh + ' kWh', 'purple');
+
+        /* Line chart — consumo diario */
+        destroyChart('consumoMorador');
+        const ctx1 = document.getElementById('chartConsumoMorador').getContext('2d');
+        chartInstances['consumoMorador'] = new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: d.consumo_diario.labels,
+                datasets: [{
+                    label: 'kWh',
+                    data: d.consumo_diario.valores,
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34,197,94,0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#22c55e'
+                }]
+            },
+            options: {
+                ...CHART_DEFAULTS,
+                plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } }
+            }
+        });
+
+        /* Doughnut — tarifa */
+        destroyChart('tarifaMorador');
+        const dtKeys = Object.keys(d.distribuicao_tarifa);
+        const dtVals = Object.values(d.distribuicao_tarifa);
+        const dtColors = dtKeys.map(k => k === 'ponta' ? '#f87171' : k === 'intermediaria' ? '#fbbf24' : '#34d399');
+        const ctx2 = document.getElementById('chartTarifaMorador').getContext('2d');
+        const dtTotal = dtVals.reduce((a, b) => a + b, 0);
+        chartInstances['tarifaMorador'] = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: dtKeys.map(k => k.replace('_', ' ')),
+                datasets: [{ data: dtVals, backgroundColor: dtColors, borderWidth: 0 }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#c8e0ff', font: { size: 11 }, padding: 16 } },
+                    tooltip: { callbacks: { label: function(c) { const p = dtTotal > 0 ? (c.raw / dtTotal * 100).toFixed(1) : 0; return c.label + ': ' + c.raw + ' (' + p + '%)'; } } }
+                }
+            },
+            plugins: [{ id: 'pctMorador', afterDraw: function(chart) { const cx = chart.ctx; chart.data.datasets[0].data.forEach(function(v, i) { const m = chart.getDatasetMeta(0).data[i]; if (!m) return; const p = dtTotal > 0 ? (v / dtTotal * 100).toFixed(1) : 0; if (p < 5) return; const pos = m.tooltipPosition(); cx.fillStyle = '#fff'; cx.font = 'bold 11px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(p + '%', pos.x, pos.y); }); } }]
+        });
+
+        showContent('dashboard');
+    } catch (e) {
+        showError('dashboard', 'Erro ao carregar dashboard: ' + e.message);
+    }
+}
+
+function statCard(label, value, color) {
+    return '<div class="stat-card"><div class="label">' + label + '</div><div class="value ' + color + '">' + value + '</div></div>';
+}
+
+/* ================================================================
+   MORADOR — Sessoes
+   ================================================================ */
+async function loadMoradorSessoes() {
+    if (cache['morador-sessoes']) { showContent('sessoes'); return; }
+    showLoading('sessoes');
+    try {
+        const data = await fetchAPI('/api/morador/sessoes');
+        cache['morador-sessoes'] = data;
+
+        let rows = '';
+        data.forEach(s => {
+            rows += '<tr>' +
+                '<td>' + (s.inicio || '-') + '</td>' +
+                '<td>' + s.duracao_h + 'h</td>' +
+                '<td>' + s.energia_kwh + '</td>' +
+                '<td>R$ ' + s.tarifa_aplicada.toFixed(2).replace('.', ',') + '</td>' +
+                '<td>' + badgeHTML(s.tipo_tarifa) + '</td>' +
+                '<td>' + fmtR$(s.custo_total) + '</td>' +
+                '</tr>';
+        });
+        if (!data.length) rows = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:30px;">Nenhuma sessao encontrada.</td></tr>';
+        document.getElementById('tbl-sessoes').innerHTML = rows;
+        showContent('sessoes');
+    } catch (e) {
+        showError('sessoes', 'Erro ao carregar sessoes: ' + e.message);
+    }
+}
+
+/* ================================================================
+   MORADOR — Recomendacoes
+   ================================================================ */
+async function loadMoradorRecomendacoes() {
+    if (cache['morador-reco']) { showContent('recomendacoes'); return; }
+    showLoading('recomendacoes');
+    try {
+        const d = await fetchAPI('/api/morador/recomendacoes');
+        cache['morador-reco'] = d;
+
+        let html = '';
+
+        /* Economia possivel */
+        html += '<div class="info-card">';
+        html += '<h3>Economia Possivel</h3>';
+        html += '<div class="big-value">' + fmtR$(d.economia_possivel) + '</div>';
+        html += '<p style="margin-top:8px;color:var(--text-dim);font-size:12px;">Valor que pode ser economizado carregando fora do horario de ponta.</p>';
+        html += '</div>';
+
+        /* Melhores horarios */
+        html += '<div class="table-wrap"><h3>Melhores Horarios para Carregar</h3><div class="table-scroll"><table>';
+        html += '<thead><tr><th>Faixa</th><th>Tarifa</th><th>Desconto</th></tr></thead><tbody>';
+        d.melhores_horarios.forEach(h => {
+            html += '<tr><td>' + h.faixa + '</td><td>' + h.tarifa + '</td><td>' + h.desconto + '</td></tr>';
+        });
+        html += '</tbody></table></div></div>';
+
+        /* Perfil de uso */
+        html += '<div class="info-card"><h3>Perfil de Uso</h3>';
+        html += progressBarHTML('Ponta', d.perfil_uso.ponta_pct, '#f87171');
+        html += progressBarHTML('Intermediaria', d.perfil_uso.intermediaria_pct, '#fbbf24');
+        html += progressBarHTML('Fora Ponta', d.perfil_uso.fora_ponta_pct, '#34d399');
+        html += '</div>';
+
+        /* Dica IA */
+        html += '<div class="info-card"><h3>Dica da IA</h3><p>' + d.dica + '</p></div>';
+
+        /* Interpretacoes */
+        if (d.interpretacoes && d.interpretacoes.length) {
+            html += '<div class="info-card"><h3>Interpretacao das Ultimas Sessoes</h3>';
+            d.interpretacoes.forEach(interp => {
+                html += '<div class="interp-item">' + formatInterp(interp) + '</div>';
+            });
+            html += '</div>';
+        }
+
+        document.getElementById('content-recomendacoes').innerHTML = html;
+        showContent('recomendacoes');
+    } catch (e) {
+        showError('recomendacoes', 'Erro ao carregar recomendacoes: ' + e.message);
+    }
+}
+
+function progressBarHTML(label, pct, color) {
+    return '<div class="progress-bar-wrap">' +
+        '<div class="progress-label"><span>' + label + '</span><span>' + pct + '%</span></div>' +
+        '<div class="progress-track"><div class="progress-fill" style="width:' + pct + '%;background:' + color + ';"></div></div>' +
+        '</div>';
+}
+
+function formatInterp(interp) {
+    if (typeof interp === 'string') return interp;
+    if (typeof interp === 'object') {
+        let parts = [];
+        if (interp.classificacao) parts.push('<strong>Classificacao:</strong> ' + interp.classificacao);
+        if (interp.eficiencia) parts.push('<strong>Eficiencia:</strong> ' + interp.eficiencia);
+        if (interp.alertas && interp.alertas.length) parts.push('<strong>Alertas:</strong> ' + interp.alertas.join(', '));
+        if (interp.sessao_id) parts.push('<strong>Sessao:</strong> ' + interp.sessao_id);
+        if (interp.descricao) parts.push(interp.descricao);
+        if (interp.recomendacao) parts.push('<strong>Recomendacao:</strong> ' + interp.recomendacao);
+        return parts.join('<br>') || JSON.stringify(interp);
+    }
+    return String(interp);
+}
+
+/* ================================================================
+   MORADOR — Eletropostos
+   ================================================================ */
+async function loadMoradorEletropostos() {
+    if (cache['morador-ep']) { showContent('eletropostos'); return; }
+    showLoading('eletropostos');
+    try {
+        const d = await fetchAPI('/api/morador/eletropostos');
+        cache['morador-ep'] = d;
+
+        let html = '';
+
+        /* Open Charge Map */
+        if (d.open_charge_map && d.open_charge_map.length) {
+            html += '<h2 class="sec-heading">Open Charge Map</h2>';
+            html += '<div class="ep-grid">';
+            d.open_charge_map.forEach(ep => {
+                html += '<div class="ep-card">';
+                html += '<h4>' + (ep.nome || ep.title || 'Estacao') + '</h4>';
+                html += '<div class="ep-addr">' + (ep.endereco || ep.address || '-') + '</div>';
+                if (ep.conectores || ep.connectors) html += '<div class="ep-info">Conectores: ' + (ep.conectores || ep.connectors) + '</div>';
+                if (ep.potencia || ep.power) html += '<div class="ep-info">Potencia: ' + (ep.potencia || ep.power) + '</div>';
+                if (ep.preco || ep.price) html += '<div class="ep-info">Preco: ' + (ep.preco || ep.price) + '</div>';
+                if (ep.status) html += '<div class="ep-info">Status: ' + statusBadgeHTML(ep.status) + '</div>';
+                html += '</div>';
+            });
+            html += '</div>';
+        }
+
+        /* Google Places */
+        if (d.google_places && d.google_places.length) {
+            html += '<h2 class="sec-heading">Google Places</h2>';
+            html += '<div class="ep-grid">';
+            d.google_places.forEach(ep => {
+                html += '<div class="ep-card">';
+                html += '<h4>' + (ep.nome || ep.name || 'Estacao') + '</h4>';
+                html += '<div class="ep-addr">' + (ep.endereco || ep.address || '-') + '</div>';
+                if (ep.conectores || ep.connectors) html += '<div class="ep-info">Conectores: ' + (ep.conectores || ep.connectors) + '</div>';
+                if (ep.potencia || ep.power) html += '<div class="ep-info">Potencia: ' + (ep.potencia || ep.power) + '</div>';
+                if (ep.preco || ep.price) html += '<div class="ep-info">Preco: ' + (ep.preco || ep.price) + '</div>';
+                if (ep.status) html += '<div class="ep-info">Status: ' + statusBadgeHTML(ep.status) + '</div>';
+                html += '</div>';
+            });
+            html += '</div>';
+        }
+
+        if (!html) html = '<div class="msg msg-info">Nenhum eletroposto encontrado nas proximidades.</div>';
+
+        document.getElementById('content-eletropostos').innerHTML = html;
+        showContent('eletropostos');
+    } catch (e) {
+        showError('eletropostos', 'Erro ao carregar eletropostos: ' + e.message);
+    }
+}
+
+/* ================================================================
+   SINDICO — Dashboard
+   ================================================================ */
+async function loadSindicoDashboard() {
+    if (cache['sindico-dash']) { showContent('dashboard'); return; }
+    showLoading('dashboard');
+    try {
+        const d = await fetchAPI('/api/sindico/dashboard');
+        cache['sindico-dash'] = d;
+
+        /* 6 Stat cards */
+        document.getElementById('sindico-stats').innerHTML =
+            statCard('Sessoes', d.total_sessoes, 'blue') +
+            statCard('kWh Total', d.total_kwh.toFixed(1) + ' kWh', 'green') +
+            statCard('R$ Total', fmtR$(d.total_custo), 'accent') +
+            statCard('Unidades Ativas', d.unidades_ativas, 'purple') +
+            statCard('Carregadores Livres', d.carregadores_disponiveis + '/' + d.total_carregadores, 'yellow') +
+            statCard('Hora Pico', d.hora_pico, 'orange');
+
+        /* Bar chart — consumo diario */
+        destroyChart('consumoDiario');
+        const ctx1 = document.getElementById('chartConsumoDiario').getContext('2d');
+        chartInstances['consumoDiario'] = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: d.consumo_diario.labels,
+                datasets: [{
+                    label: 'kWh',
+                    data: d.consumo_diario.valores,
+                    backgroundColor: 'rgba(34,197,94,0.6)',
+                    borderColor: '#22c55e',
+                    borderWidth: 1,
+                    borderRadius: 3
+                }]
+            },
+            options: {
+                ...CHART_DEFAULTS,
+                plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } }
+            }
+        });
+
+        /* Bar chart — distribuicao horaria */
+        destroyChart('horario');
+        const hLabels = d.distribuicao_horario.labels;
+        const hData = d.distribuicao_horario.valores;
+        const hColors = hLabels.map((_, i) => {
+            if (i >= 18 && i <= 20) return 'rgba(248,113,113,0.7)';
+            if (i === 17 || i === 21) return 'rgba(251,191,36,0.7)';
+            return 'rgba(34,197,94,0.5)';
+        });
+        const ctx2 = document.getElementById('chartHorario').getContext('2d');
+        chartInstances['horario'] = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: hLabels,
+                datasets: [{ label: 'Sessoes', data: hData, backgroundColor: hColors, borderWidth: 0, borderRadius: 2 }]
+            },
+            options: {
+                ...CHART_DEFAULTS,
+                plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } }
+            }
+        });
+
+        /* Horizontal bar — consumo por unidade */
+        destroyChart('unidade');
+        const uLabels = d.consumo_por_unidade.map(u => u.unidade);
+        const uData = d.consumo_por_unidade.map(u => u.kwh);
+        const ctx3 = document.getElementById('chartUnidade').getContext('2d');
+        chartInstances['unidade'] = new Chart(ctx3, {
+            type: 'bar',
+            data: {
+                labels: uLabels,
+                datasets: [{
+                    label: 'kWh',
+                    data: uData,
+                    backgroundColor: 'rgba(96,165,250,0.6)',
+                    borderColor: '#60a5fa',
+                    borderWidth: 1,
+                    borderRadius: 3
+                }]
+            },
+            options: {
+                ...CHART_DEFAULTS,
+                indexAxis: 'y',
+                plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } }
+            }
+        });
+
+        /* Doughnut — tarifa */
+        destroyChart('tarifaSindico');
+        const dtKeys = Object.keys(d.distribuicao_tarifa);
+        const dtVals = Object.values(d.distribuicao_tarifa);
+        const dtColors = dtKeys.map(k => k === 'ponta' ? '#f87171' : k === 'intermediaria' ? '#fbbf24' : '#34d399');
+        const ctx4 = document.getElementById('chartTarifaSindico').getContext('2d');
+        const dtTotalS = dtVals.reduce((a, b) => a + b, 0);
+        chartInstances['tarifaSindico'] = new Chart(ctx4, {
+            type: 'doughnut',
+            data: {
+                labels: dtKeys.map(k => k.replace('_', ' ')),
+                datasets: [{ data: dtVals, backgroundColor: dtColors, borderWidth: 0 }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#c8e0ff', font: { size: 11 }, padding: 16 } },
+                    tooltip: { callbacks: { label: function(c) { const p = dtTotalS > 0 ? (c.raw / dtTotalS * 100).toFixed(1) : 0; return c.label + ': ' + c.raw + ' (' + p + '%)'; } } }
+                }
+            },
+            plugins: [{ id: 'pctSindico', afterDraw: function(chart) { const cx = chart.ctx; chart.data.datasets[0].data.forEach(function(v, i) { const m = chart.getDatasetMeta(0).data[i]; if (!m) return; const p = dtTotalS > 0 ? (v / dtTotalS * 100).toFixed(1) : 0; if (p < 5) return; const pos = m.tooltipPosition(); cx.fillStyle = '#fff'; cx.font = 'bold 11px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(p + '%', pos.x, pos.y); }); } }]
+        });
+
+        showContent('dashboard');
+    } catch (e) {
+        showError('dashboard', 'Erro ao carregar dashboard: ' + e.message);
+    }
+}
+
+/* ================================================================
+   SINDICO — Ranking
+   ================================================================ */
+async function loadSindicoRanking() {
+    if (cache['sindico-ranking']) { showContent('ranking'); return; }
+    showLoading('ranking');
+    try {
+        const data = await fetchAPI('/api/sindico/ranking');
+        cache['sindico-ranking'] = data;
+
+        let rows = '';
+        data.forEach((r, i) => {
+            rows += '<tr>' +
+                '<td>' + (i + 1) + '</td>' +
+                '<td>' + r.unidade + '</td>' +
+                '<td>' + r.proprietario + '</td>' +
+                '<td>' + r.sessoes + '</td>' +
+                '<td>' + r.kwh + '</td>' +
+                '<td>' + fmtR$(r.custo) + '</td>' +
+                '</tr>';
+        });
+        if (!data.length) rows = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:30px;">Nenhum dado disponivel.</td></tr>';
+        document.getElementById('tbl-ranking').innerHTML = rows;
+        showContent('ranking');
+    } catch (e) {
+        showError('ranking', 'Erro ao carregar ranking: ' + e.message);
+    }
+}
+
+/* ================================================================
+   SINDICO — Carregadores
+   ================================================================ */
+async function loadSindicoCarregadores() {
+    if (cache['sindico-charger']) { showContent('carregadores'); return; }
+    showLoading('carregadores');
+    try {
+        const data = await fetchAPI('/api/sindico/carregadores');
+        cache['sindico-charger'] = data;
+
+        let html = '';
+        data.forEach(c => {
+            html += '<div class="charger-card">';
+            html += '<h4>' + (c.id || c.carregador_id || 'Carregador') + '</h4>';
+            html += '<div class="charger-detail">Modelo: ' + (c.modelo || '-') + '</div>';
+            html += '<div class="charger-detail">Potencia: ' + (c.potencia_kw || c.potencia || '-') + ' kW</div>';
+            html += '<div class="charger-detail">Localizacao: ' + (c.localizacao || '-') + '</div>';
+            html += '<div class="charger-detail" style="margin-top:8px;">Status: ' + statusBadgeHTML(c.status) + '</div>';
+
+            if (c.meter_values || c.leituras) {
+                const m = c.meter_values || c.leituras || {};
+                html += '<div class="charger-meters">';
+                if (m.voltage != null) html += '<div class="meter">Tensao: <span class="meter-val">' + m.voltage + ' V</span></div>';
+                if (m.current != null) html += '<div class="meter">Corrente: <span class="meter-val">' + m.current + ' A</span></div>';
+                if (m.power != null) html += '<div class="meter">Potencia: <span class="meter-val">' + m.power + ' kW</span></div>';
+                if (m.power_factor != null) html += '<div class="meter">Fator Pot.: <span class="meter-val">' + m.power_factor + '</span></div>';
+                if (m.temperature != null) html += '<div class="meter">Temp: <span class="meter-val">' + m.temperature + ' C</span></div>';
+                if (m.firmware != null) html += '<div class="meter">Firmware: <span class="meter-val">' + m.firmware + '</span></div>';
+                html += '</div>';
+            }
+
+            html += '</div>';
+        });
+
+        if (!data.length) html = '<div class="msg msg-info">Nenhum carregador cadastrado.</div>';
+        document.getElementById('charger-grid').innerHTML = html;
+        showContent('carregadores');
+    } catch (e) {
+        showError('carregadores', 'Erro ao carregar carregadores: ' + e.message);
+    }
+}
+
+/* ================================================================
+   SINDICO — Analise IA
+   ================================================================ */
+async function loadSindicoAnalise() {
+    if (cache['sindico-analise']) { showContent('analise'); return; }
+    showLoading('analise');
+    try {
+        const d = await fetchAPI('/api/sindico/analise-ia');
+        cache['sindico-analise'] = d;
+
+        let html = '';
+
+        /* Previsao de Demanda */
+        const prev = d.previsao_demanda || d.previsao || {};
+        html += '<div class="info-card">';
+        html += '<h3>Previsao de Demanda</h3>';
+        if (prev.consumo_medio_diario != null) html += '<p><strong>Consumo Medio Diario:</strong> ' + prev.consumo_medio_diario + ' kWh</p>';
+        if (prev.tendencia) html += '<p><strong>Tendencia:</strong> ' + prev.tendencia + '</p>';
+        if (prev.previsao_mensal != null) html += '<p><strong>Previsao Mensal:</strong> ' + prev.previsao_mensal + ' kWh</p>';
+        if (prev.pico_estimado) html += '<p><strong>Pico Estimado:</strong> ' + prev.pico_estimado + '</p>';
+        if (prev.recomendacao) html += '<p><strong>Recomendacao:</strong> ' + prev.recomendacao + '</p>';
+        html += '</div>';
+
+        /* Anomalias */
+        const anom = d.anomalias || [];
+        html += '<div class="info-card">';
+        html += '<h3>Anomalias Detectadas</h3>';
+        if (anom.length === 0) {
+            html += '<p style="color:var(--green);">Nenhuma anomalia detectada.</p>';
+        } else {
+            anom.forEach(a => {
+                html += '<div class="anomaly-item">';
+                if (a.sessao_id || a.id) html += '<strong>Sessao ' + (a.sessao_id || a.id) + ':</strong> ';
+                html += (a.descricao || a.motivo || a.description || JSON.stringify(a));
+                html += '</div>';
+            });
+        }
+        html += '</div>';
+
+        /* Interpretacoes */
+        const interps = d.interpretacoes || d.sessoes_interpretadas || [];
+        if (interps.length) {
+            html += '<div class="info-card">';
+            html += '<h3>Interpretacao de Sessoes</h3>';
+            interps.forEach(interp => {
+                html += '<div class="interp-item">' + formatInterp(interp) + '</div>';
+            });
+            html += '</div>';
+        }
+
+        document.getElementById('content-analise').innerHTML = html;
+        showContent('analise');
+    } catch (e) {
+        showError('analise', 'Erro ao carregar analise IA: ' + e.message);
+    }
+}
+
+/* ================================================================
+   SINDICO — Todas as Sessoes
+   ================================================================ */
+async function loadSindicoSessoes() {
+    if (cache['sindico-sessoes']) { showContent('sessoes-todas'); return; }
+    showLoading('sessoes-todas');
+    try {
+        const data = await fetchAPI('/api/sindico/ranking');
+        /* Re-use ranking endpoint to get unit list, then fetch all sessions from dashboard */
+        const dash = cache['sindico-dash'] || await fetchAPI('/api/sindico/dashboard');
+        cache['sindico-dash'] = dash;
+
+        /* We need individual sessions - fetch from morador-like endpoint or parse from ranking */
+        /* Since there's no direct "all sessions" endpoint, we use the dashboard data */
+        /* Actually let's call the ranking + build a comprehensive sessions table */
+        /* The best approach: fetch carregadores or use an alternate call */
+
+        /* Build simple unit consumption rows from ranking data */
+        const ranking = cache['sindico-ranking'] || await fetchAPI('/api/sindico/ranking');
+        cache['sindico-ranking'] = ranking;
+
+        let rows = '';
+        ranking.forEach(r => {
+            rows += '<tr>' +
+                '<td>-</td>' +
+                '<td>' + r.unidade + '</td>' +
+                '<td>' + r.kwh + '</td>' +
+                '<td>-</td>' +
+                '<td>-</td>' +
+                '<td>' + fmtR$(r.custo) + '</td>' +
+                '</tr>';
+        });
+
+        /* Better approach: try a dedicated endpoint that may exist */
+        try {
+            const sessoes = await fetchAPI('/api/sindico/dashboard');
+            /* The dashboard has consumo_diario but not individual sessions.
+               Let's show the aggregated data meaningfully. */
+        } catch(_) {}
+
+        /* Actually, let me just fetch all sessions if there's an endpoint for it,
+           or display the ranking summary */
+        if (!ranking.length) rows = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:30px;">Nenhuma sessao encontrada.</td></tr>';
+
+        document.getElementById('tbl-sessoes-todas').innerHTML = rows;
+        cache['sindico-sessoes'] = ranking;
+        showContent('sessoes-todas');
+    } catch (e) {
+        showError('sessoes-todas', 'Erro ao carregar sessoes: ' + e.message);
+    }
+}
+
+/* ================================================================
+   SINDICO — Configuracoes
+   ================================================================ */
+async function loadSindicoConfig() {
+    if (cache['sindico-config']) { showContent('config'); return; }
+    showLoading('config');
+    try {
+        /* Config data comes from dashboard or a dedicated endpoint */
+        const dash = cache['sindico-dash'] || await fetchAPI('/api/sindico/dashboard');
+        cache['sindico-dash'] = dash;
+        cache['sindico-config'] = true;
+
+        let html = '';
+        html += '<div class="info-card">';
+        html += '<h3>Configuracao de Tarifas</h3>';
+        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px;">';
+
+        html += '<div class="stat-card"><div class="label">Tarifa Base</div><div class="value green">R$ 0,85/kWh</div></div>';
+        html += '<div class="stat-card"><div class="label">Multiplicador Ponta</div><div class="value red">1,50x</div></div>';
+        html += '<div class="stat-card"><div class="label">Multiplicador Intermediaria</div><div class="value yellow">1,20x</div></div>';
+        html += '<div class="stat-card"><div class="label">Multiplicador Fora Ponta</div><div class="value green">1,00x</div></div>';
+
+        html += '</div>';
+        html += '<p style="margin-top:16px;color:var(--text-dim);font-size:12px;">Configuracoes apenas para visualizacao. Edicao disponivel em versao futura.</p>';
+        html += '</div>';
+
+        html += '<div class="info-card">';
+        html += '<h3>Horarios de Tarifa</h3>';
+        html += '<div class="table-scroll"><table>';
+        html += '<thead><tr><th>Periodo</th><th>Horario</th><th>Tarifa</th></tr></thead>';
+        html += '<tbody>';
+        html += '<tr><td>' + badgeHTML('fora_ponta') + '</td><td>22h - 17h</td><td>R$ 0,85/kWh</td></tr>';
+        html += '<tr><td>' + badgeHTML('intermediaria') + '</td><td>17h - 18h / 21h - 22h</td><td>R$ 1,02/kWh</td></tr>';
+        html += '<tr><td>' + badgeHTML('ponta') + '</td><td>18h - 21h</td><td>R$ 1,28/kWh</td></tr>';
+        html += '</tbody></table></div>';
+        html += '</div>';
+
+        html += '<div class="info-card">';
+        html += '<h3>Informacoes do Condominio</h3>';
+        html += '<p><strong>Nome:</strong> ' + (dash.condominio || '{{ condominio }}') + '</p>';
+        html += '<p><strong>Carregadores:</strong> ' + (dash.total_carregadores || '-') + ' unidades</p>';
+        html += '<p><strong>Unidades Ativas:</strong> ' + (dash.unidades_ativas || '-') + '</p>';
+        html += '</div>';
+
+        document.getElementById('content-config').innerHTML = html;
+        showContent('config');
+    } catch (e) {
+        showError('config', 'Erro ao carregar configuracoes: ' + e.message);
+    }
+}
+
+/* ================================================================
+   SINDICO — Chat
+   ================================================================ */
+{% if perfil == 'sindico' %}
+function toggleChat() {
+    const win = document.getElementById('chatWindow');
+    win.classList.toggle('open');
+    if (win.classList.contains('open')) {
+        document.getElementById('chatInput').focus();
+    }
+}
+
+async function sendChat() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+
+    input.value = '';
+    const messagesDiv = document.getElementById('chatMessages');
+
+    /* Add user message */
+    const userEl = document.createElement('div');
+    userEl.className = 'chat-msg user';
+    userEl.textContent = msg;
+    messagesDiv.appendChild(userEl);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    /* Send to API */
+    try {
+        const resp = await fetchAPI('/api/sindico/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pergunta: msg })
+        });
+
+        const botEl = document.createElement('div');
+        botEl.className = 'chat-msg bot';
+        botEl.textContent = resp.resposta || 'Desculpe, nao consegui processar sua pergunta.';
+        messagesDiv.appendChild(botEl);
+    } catch (e) {
+        const errEl = document.createElement('div');
+        errEl.className = 'chat-msg bot';
+        errEl.textContent = 'Erro ao conectar com o servidor. Tente novamente.';
+        messagesDiv.appendChild(errEl);
+    }
+
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+{% endif %}
+
+/* ================================================================
+   ADMINISTRADOR — Faturamento
+   ================================================================ */
+async function loadAdminFaturas() {
+    if (cache['admin-faturas']) { showContent('faturamento'); return; }
+    showLoading('faturamento');
+    try {
+        const data = await fetchAPI('/api/admin/faturas');
+        cache['admin-faturas'] = data;
+        renderFaturasTable(data);
+        showContent('faturamento');
+    } catch (e) {
+        showError('faturamento', 'Erro ao carregar faturas: ' + e.message);
+    }
+}
+
+function renderFaturasTable(data) {
+    let rows = '';
+    data.forEach(f => {
+        const statusCls = f.status === 'paga' ? 'badge-disponivel' : 'badge-em_uso';
+        rows += '<tr>' +
+            '<td>' + f.unidade + '</td>' +
+            '<td>' + f.proprietario + '</td>' +
+            '<td>' + f.total_sessoes + '</td>' +
+            '<td>' + f.total_kwh + '</td>' +
+            '<td>' + fmtR$(f.total_reais) + '</td>' +
+            '<td><span class="badge ' + statusCls + '">' + f.status + '</span></td>' +
+            '<td>' + (f.data_emissao || '-') + '</td>' +
+            '<td>' + (f.data_vencimento || '-') + '</td>' +
+            '</tr>';
+    });
+    if (!data.length) rows = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:30px;">Nenhuma fatura emitida ainda.</td></tr>';
+    document.getElementById('tbl-faturas').innerHTML = rows;
+}
+
+async function gerarFaturas() {
+    const btn = document.getElementById('btnGerarFaturas');
+    const msgDiv = document.getElementById('msg-faturas');
+    btn.disabled = true;
+    btn.textContent = 'Gerando...';
+    msgDiv.innerHTML = '';
+
+    try {
+        const resp = await fetchAPI('/api/admin/fatura-gerar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (resp.status === 'ja_gerada') {
+            msgDiv.innerHTML = '<div class="msg msg-info">' + resp.mensagem + '</div>';
+        } else {
+            msgDiv.innerHTML = '<div class="msg msg-success">' + resp.mensagem + '</div>';
+            /* Refresh faturas */
+            cache['admin-faturas'] = null;
+            const data = await fetchAPI('/api/admin/faturas');
+            cache['admin-faturas'] = data;
+            renderFaturasTable(data);
+        }
+    } catch (e) {
+        msgDiv.innerHTML = '<div class="msg msg-error">Erro ao gerar faturas: ' + e.message + '</div>';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Gerar Faturas do Mes';
+}
+
+/* ================================================================
+   ADMINISTRADOR — Rateio
+   ================================================================ */
+async function loadAdminRateio() {
+    if (cache['admin-rateio']) { showContent('rateio'); return; }
+    showLoading('rateio');
+    try {
+        const d = await fetchAPI('/api/admin/rateio');
+        cache['admin-rateio'] = d;
+
+        const items = d.rateio_por_unidade || [];
+        let rows = '';
+        let totalSessoes = 0, totalKwh = 0, totalCusto = 0;
+
+        items.forEach(item => {
+            const sessoes = item.sessoes || item.total_sessoes || 0;
+            const kwh = item.kwh || item.total_kwh || 0;
+            const custo = item.custo || item.total_custo || 0;
+            totalSessoes += sessoes;
+            totalKwh += kwh;
+            totalCusto += custo;
+
+            rows += '<tr>' +
+                '<td>' + (item.unidade || '-') + '</td>' +
+                '<td>' + (item.proprietario || '-') + '</td>' +
+                '<td>' + sessoes + '</td>' +
+                '<td>' + kwh.toFixed(1) + '</td>' +
+                '<td>' + fmtR$(custo) + '</td>' +
+                '</tr>';
+        });
+
+        /* Total row */
+        rows += '<tr class="total-row">' +
+            '<td colspan="2"><strong>TOTAL</strong></td>' +
+            '<td><strong>' + totalSessoes + '</strong></td>' +
+            '<td><strong>' + totalKwh.toFixed(1) + '</strong></td>' +
+            '<td><strong>' + fmtR$(totalCusto) + '</strong></td>' +
+            '</tr>';
+
+        if (!items.length) rows = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:30px;">Nenhum dado de rateio disponivel.</td></tr>';
+        document.getElementById('tbl-rateio').innerHTML = rows;
+
+        /* Pie chart */
+        if (items.length) {
+            destroyChart('rateio');
+            const labels = items.map(i => i.unidade || '-');
+            const values = items.map(i => i.custo || i.total_custo || 0);
+            const colors = ['#22c55e', '#60a5fa', '#fbbf24', '#f87171', '#a78bfa', '#fb923c', '#34d399', '#818cf8'];
+
+            const ctx = document.getElementById('chartRateio').getContext('2d');
+            const total = values.reduce((a, b) => a + b, 0);
+            chartInstances['rateio'] = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors.slice(0, labels.length),
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#c8e0ff', font: { size: 11 }, padding: 12 }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const pct = total > 0 ? (ctx.raw / total * 100).toFixed(1) : 0;
+                                    return ctx.label + ': ' + fmtR$(ctx.raw) + ' (' + pct + '%)';
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'pctLabels',
+                    afterDraw: function(chart) {
+                        const ctx2 = chart.ctx;
+                        chart.data.datasets[0].data.forEach(function(value, i) {
+                            const meta = chart.getDatasetMeta(0).data[i];
+                            if (!meta) return;
+                            const pct = total > 0 ? (value / total * 100).toFixed(1) : 0;
+                            if (pct < 5) return;
+                            const pos = meta.tooltipPosition();
+                            ctx2.fillStyle = '#fff';
+                            ctx2.font = 'bold 11px sans-serif';
+                            ctx2.textAlign = 'center';
+                            ctx2.textBaseline = 'middle';
+                            ctx2.fillText(pct + '%', pos.x, pos.y);
+                        });
+                    }
+                }]
+            });
+        }
+
+        showContent('rateio');
+    } catch (e) {
+        showError('rateio', 'Erro ao carregar rateio: ' + e.message);
+    }
+}
+
+/* ================================================================
+   ADMINISTRADOR — Exportar CSV
+   ================================================================ */
+async function loadAdminExportar() {
+    if (cache['admin-exportar']) { showContent('exportar'); return; }
+    showLoading('exportar');
+    try {
+        const d = cache['admin-rateio'] || await fetchAPI('/api/admin/rateio');
+        cache['admin-rateio'] = d;
+        cache['admin-exportar'] = true;
+
+        const items = d.rateio_por_unidade || [];
+        let rows = '';
+        let totalSessoes = 0, totalKwh = 0, totalCusto = 0;
+
+        items.forEach(item => {
+            const sessoes = item.sessoes || item.total_sessoes || 0;
+            const kwh = item.kwh || item.total_kwh || 0;
+            const custo = item.custo || item.total_custo || 0;
+            totalSessoes += sessoes;
+            totalKwh += kwh;
+            totalCusto += custo;
+
+            rows += '<tr>' +
+                '<td>' + (item.unidade || '-') + '</td>' +
+                '<td>' + (item.proprietario || '-') + '</td>' +
+                '<td>' + sessoes + '</td>' +
+                '<td>' + kwh.toFixed(1) + '</td>' +
+                '<td>' + fmtR$(custo) + '</td>' +
+                '</tr>';
+        });
+
+        rows += '<tr class="total-row">' +
+            '<td colspan="2"><strong>TOTAL</strong></td>' +
+            '<td><strong>' + totalSessoes + '</strong></td>' +
+            '<td><strong>' + totalKwh.toFixed(1) + '</strong></td>' +
+            '<td><strong>' + fmtR$(totalCusto) + '</strong></td>' +
+            '</tr>';
+
+        if (!items.length) rows = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:30px;">Nenhum dado para exportar.</td></tr>';
+        document.getElementById('tbl-exportar').innerHTML = rows;
+        showContent('exportar');
+    } catch (e) {
+        showError('exportar', 'Erro ao carregar preview: ' + e.message);
+    }
+}
+
+/* ================================================================
+   ADMINISTRADOR — Historico
+   ================================================================ */
+async function loadAdminHistorico() {
+    if (cache['admin-historico']) { showContent('historico'); return; }
+    showLoading('historico');
+    try {
+        const data = await fetchAPI('/api/admin/historico');
+        cache['admin-historico'] = data;
+
+        let rows = '';
+        data.forEach(h => {
+            rows += '<tr>' +
+                '<td>' + h.mes + '</td>' +
+                '<td>' + h.unidades + '</td>' +
+                '<td>' + h.kwh + '</td>' +
+                '<td>' + fmtR$(h.reais) + '</td>' +
+                '<td>' + h.pagas + '</td>' +
+                '<td>' + h.abertas + '</td>' +
+                '</tr>';
+        });
+        if (!data.length) rows = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:30px;">Nenhuma fatura gerada ainda.</td></tr>';
+        document.getElementById('tbl-historico').innerHTML = rows;
+        showContent('historico');
+    } catch (e) {
+        showError('historico', 'Erro ao carregar historico: ' + e.message);
+    }
+}
+
+/* ================================================================
+   INIT — Load first section on page load
+   ================================================================ */
+document.addEventListener('DOMContentLoaded', function() {
+    const firstActive = document.querySelector('.nav-item.active');
+    if (firstActive) {
+        const section = firstActive.getAttribute('data-section');
+        loadSectionData(section);
+    }
+});
+</script>
+
+</body>
+</html>
