@@ -19,6 +19,7 @@
 - Mercado global: 14M EVs vendidos em 2023 (IEA), projecao 40M/ano ate 2030
 - Brasil: 93 mil EVs/hibridos vendidos em 2023 (+91%), projecao 4M ate 2030 (EPE)
 - Cada sessao de recarga produz dados uteis: duracao, kWh, horario, frequencia, picos
+- **Parceria GoodWe + FIAP**: GoodWe (>100 GW instalados, presente em +100 paises) disponibiliza o Energy Innovation Lab na Unidade 2 Aclimacao da FIAP, com carregador EV Charger FIAP (HCA G2) instalado no estacionamento L1 para desenvolvimento e teste
 
 ### 1.2 Problema Central
 Infraestruturas de recarga compartilhadas em condominios nao dispoem de mecanismos integrados para:
@@ -236,7 +237,26 @@ Custo_Unidade = SUM(kWh_sessao_i x Tarifa_sessao_i) + Taxa_Admin (5%)
 
 ---
 
-## 9. Roadmap
+## 9. Modelo de Negocio
+
+### Formato
+- SaaS B2B: assinatura mensal por condominio gerenciado
+
+### Precificacao
+- Faixa: R$ 200-500/mes por condominio (ate 10 carregadores)
+- Adicional por carregador extra: R$ 30/mes
+- Setup: R$ 500 por condominio (instalacao + configuracao)
+- Sindico Virtual Premium: R$ 100/mes (API LLM incluida)
+
+### Publico-alvo
+- Condominios residenciais com carregadores compartilhados
+- Edificios corporativos com vagas de recarga para funcionarios
+- Campus universitarios (como a propria FIAP)
+- Estacionamentos comerciais com servico de recarga
+
+---
+
+## 10. Roadmap
 
 | Fase | Entrega | Prazo |
 |------|---------|-------|
@@ -250,7 +270,7 @@ Custo_Unidade = SUM(kWh_sessao_i x Tarifa_sessao_i) + Taxa_Admin (5%)
 
 ---
 
-## 10. Entregaveis Sprint 01 (Alinhamento com o Challenge)
+## 11. Entregaveis Sprint 01 (Alinhamento com o Challenge)
 
 Conforme o playbook, a avaliacao foca em raciocinio arquitetonico, de negocios e de gestao de dados:
 
