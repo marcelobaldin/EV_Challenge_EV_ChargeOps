@@ -71,12 +71,33 @@ Infraestruturas de recarga compartilhadas em condominios nao dispoem de mecanism
 
 ### 2.3 Protocolos
 - **OCPP 1.6J**: protocolo aberto da Open Charge Alliance, exigido pela ANEEL
-- **MODBUS RTU/TCP**: telemetria industrial (V, A, W, kWh, cos phi)
+- **MODBUS TCP**: protocolo nativo do HCA G2 (9600 baud, 8N1), ~80 registradores (enderecos 10000-30015) para telemetria (V, A, W, kWh), controle (liga/desliga, modos, DLM), gerenciamento RFID e firmware OTA
 
-### 2.4 V2G e ISO 15118
+### 2.4 Registradores Modbus HCA G2
+
+O carregador HCA G2 expoe ~80 registradores via Modbus TCP. Faixas principais (ref: Mapa MODBUS_HCA G2.pdf V1.0.15):
+
+| Faixa | Funcao | Exemplos |
+|-------|--------|----------|
+| 10000-10007 | Controle e falhas | EMS dispatch, fault bytes (bitmaps) |
+| 10009-10016 | Medicao eletrica | Tensao A/B/C (V), corrente A/B/C (A), potencia (kW), capacidade (kWh) |
+| 10017-10019 | Status operacional | Status estacao (11 estados), comunicacao (bitmap), plug-and-charge |
+| 10020-10022 | Reserva/agendamento | Status reserva, hora inicio, duracao |
+| 10023-10029 | Configuracao | Alternancia fase, DLM, disjuntor, potencia max/min |
+| 10030-10038 | Modo avancado | SOC bateria, modo carregamento (rapido/PV/PV+bat), reserva |
+| 10040-10108 | Identificacao e fonte | SN, firmware, tipo, energia acumulada, conexao veiculo, fonte energia |
+| 10500-10521 | Gerenciamento RFID | Consultar/adicionar/remover cartoes (ate 10) |
+| 20000-20098 | Firmware OTA | URL download, trigger, status, percentual |
+| 30000-30015 | Alarmes IoT | Informacoes de alarme para plataforma IoT |
+
+Tipos de dados: U16 (2 bytes), S16, U32 (4 bytes), S32, STR (string ASCII).
+Acesso: RO (somente leitura), WO (somente escrita), RW (leitura e escrita).
+
+### 2.5 V2G e ISO 15118
 - Vehicle-to-Grid: bateria EV como armazenamento distribuido
 - ANEEL CP 020/2024 em analise
 - EV ChargeOps: V2G no roadmap via ISO 15118
+- EV ChargeOps: modos PV e PV+Bateria ja implementados como preparacao
 
 ---
 
@@ -90,27 +111,27 @@ CAMADA DIGITAL
        ^                    ^                ^
        |                    |                |
   CAMADA DE CONECTIVIDADE
-  OCPP 1.6J (WebSocket) | MODBUS RTU/TCP | Wi-Fi + LAN + RS-485
+  OCPP 1.6J (WebSocket) | Modbus TCP (9600, 8N1) | Wi-Fi + LAN + RS-485 (x2)
        ^                    ^                ^
        |                    |                |
   CAMADA FISICA
-  GoodWe HCA G2: 7kW | 11kW | 22kW | RFID ISO 14443A | IP65
+  GoodWe HCA G2: 7kW | 11kW | 22kW | RFID ISO 14443A | IP66 | DPS III
 ```
 
 ### 3.2 Hardware GoodWe HCA G2
 
 | Modelo | Potencia | Fase | Conector | IP |
 |--------|----------|------|----------|-----|
-| GW7K-HCA-20 | 7 kW | Monofasico | AC Tipo 2 | IP65 |
-| GW11K-HCA-20 | 11 kW | Trifasico | AC Tipo 2 | IP65 |
-| GW22K-HCA-20 | 22 kW | Trifasico | AC Tipo 2 | IP65 |
+| GW7K-HCA-20 | 7 kW | Monofasico | AC Tipo 2 | IP66 |
+| GW11K-HCA-20 | 11 kW | Trifasico | AC Tipo 2 | IP66 |
+| GW22K-HCA-20 | 22 kW | Trifasico | AC Tipo 2 | IP66 |
 
-Caracteristicas: RFID ISO 14443A (10 cartoes), RS-485 + LAN + Wi-Fi + BT, protecoes RCD/OVP/UVP/OCP/OTP.
+Caracteristicas: RFID ISO 14443A (10 cartoes), RS-485 (x2) + LAN + Wi-Fi + Bluetooth, Modbus TCP (9600 baud, 8N1), DPS Tipo III, protecao IP66/IP55 (plugue), protecoes RCD/OVP/UVP/OCP/OTP/DPS. Certificacao ANATEL (06795-24-02673).
 
 ### 3.3 Fluxo de Dados
 
 ```
-[Morador]--RFID-->[Carregador HCA G2]--OCPP/MODBUS-->[Servidor EV ChargeOps]
+[Morador]--RFID-->[Carregador HCA G2]--Modbus TCP / OCPP 1.6J-->[Servidor EV ChargeOps]
                                                          |
                     +------------------------------------+--------------------+
                     |                |                   |                    |
@@ -122,6 +143,36 @@ Caracteristicas: RFID ISO 14443A (10 cartoes), RS-485 + LAN + Wi-Fi + BT, protec
                            /            \
                 [Dashboard Sindico]  [App Morador]
 ```
+
+### 3.4 Modos de Carregamento HCA G2
+
+O hardware suporta 5 modos de operacao (registrador Modbus 10032):
+
+| Modo | Descricao | Fonte de Energia |
+|------|-----------|------------------|
+| Rapido (0) | Potencia nominal, carregamento padrao | Rede + PV + Bateria |
+| Prioridade Solar (1) | Usa apenas excedente fotovoltaico | Somente PV |
+| PV + Bateria (2) | Combina energia solar e armazenamento | PV + Bateria |
+| Agendamento | Recarga programada por horario (reg 10020-10022) | Configuravel |
+| Controle Dinamico de Carga (DLM) | Ajusta potencia conforme corrente do disjuntor (reg 10025-10026) | Rede (limitada) |
+
+### 3.5 Status da Estacao de Carregamento
+
+O registrador 10017 define 11 estados operacionais:
+
+| Codigo | Status | Descricao |
+|--------|--------|-----------|
+| 00 | Idle (plugado) | Conector plugado, sem carga |
+| 01 | Idle (desplugado) | Disponivel para uso |
+| 02 | Handshake | Comunicando com veiculo |
+| 03 | Carregando | Sessao de carga ativa |
+| 04 | Completo | Carga finalizada |
+| 05 | Alarme | Falha detectada |
+| 06 | Agendado | Aguardando horario programado |
+| 07 | Manutencao | Em modo de manutencao |
+| 08 | Falha ao iniciar | Erro ao iniciar sessao |
+| 09 | Upgrade | Atualizacao de firmware em andamento |
+| 10 | Interrompido | Carga interrompida (PV/bateria insuficiente) |
 
 ---
 
@@ -155,7 +206,7 @@ Todos os eventos registrados com timestamp UTC: RFID apresentado, sessao iniciad
 #### 5.1 Interpretacao
 - **Classificacao de sessoes**: NORMAL, RAPIDA, LONGA, PONTA, FORA_PONTA
 - **Perfis de consumo**: COMMUTER, FLEX, HEAVY_USER, LIGHT_USER
-- **Parsing MODBUS**: tensao, corrente, potencia, fator de potencia -> eficiencia de carga
+- **Parsing MODBUS**: leitura dos registradores reais (10009-10016) para tensao por fase (V), corrente por fase (A), potencia (kW), energia acumulada (kWh). Suporte a carregadores monofasicos (220V) e trifasicos (380V, 3 fases)
 - **Deteccao de anomalias**: consumo 3+ sigma, sessao fantasma, RFID nao autorizado
 
 #### 5.2 Preditividade
@@ -234,6 +285,8 @@ Custo_Unidade = SUM(kWh_sessao_i x Tarifa_sessao_i) + Taxa_Admin (5%)
 | Q5 | Armazenamento | In-memory | MVP; -> PostgreSQL prod |
 | Q6 | Infra | On-premise | LGPD + offline; -> cloud prod |
 | Q7 | IA | Hibrida | Local (scikit) + API LLM (Sindico) |
+| Q8 | Telemetria | Modbus TCP | Protocolo nativo HCA G2, ~80 regs |
+| Q9 | Protecao | IP66/DPS III | Specs reais do datasheet GoodWe |
 
 ---
 

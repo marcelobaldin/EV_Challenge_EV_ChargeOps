@@ -55,6 +55,135 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 # ============================================================================
+# MAPA DE REGISTRADORES MODBUS - GoodWe HCA G2 (Ref: Mapa MODBUS_HCA G2.pdf)
+# ============================================================================
+
+MODBUS_REGISTERS = {
+    # Controle de energia
+    10000: {"name": "EMS Energy Dispatch", "type": "U16", "rw": "RW", "unit": None,
+            "desc": "0=normal, 1=ajustar potencia minima para carga"},
+    # Falhas
+    10001: {"name": "AC Fault Bytes 01", "type": "U16", "rw": "RO", "unit": None,
+            "desc": "Bitmap: bit0=emergencia, bit1=sobretensao, bit2=sobrecorrente, bit3=subtensao, bit4=conector, bit5=S2, bit6=sobreaquecimento, bit7=sobreaquecimento pistola"},
+    10002: {"name": "AC Fault Bytes 02", "type": "U16", "rw": "RO", "unit": None,
+            "desc": "Bitmap: bit0=acesso porta, bit1=aterramento, bit2=handshake timeout, bit3=RFID comm, bit4=serial comm, bit5=medidor IC, bit6=rele saida, bit7=trava pistola"},
+    10003: {"name": "AC Fault Bytes 03", "type": "U16", "rw": "RO", "unit": None,
+            "desc": "Bitmap: bit0=curto-circuito saida, bit1=corrente vazamento, bit2=pausa >10min, bit3=leitura medidor anormal, bit4=offline PV/bat inicia carga, bit5=potencia insuficiente PV/bat"},
+    # Tensao, Corrente, Potencia
+    10009: {"name": "A Phase Charging Volt", "type": "U16", "rw": "RO", "unit": "V", "scale": 10},
+    10010: {"name": "B Phase Charging Volt", "type": "U16", "rw": "RO", "unit": "V", "scale": 10},
+    10011: {"name": "C Phase Charging Volt", "type": "U16", "rw": "RO", "unit": "V", "scale": 10},
+    10012: {"name": "A Phase Charging Current", "type": "U16", "rw": "RO", "unit": "A", "scale": 10},
+    10013: {"name": "B Phase Charging Current", "type": "U16", "rw": "RO", "unit": "A", "scale": 10},
+    10014: {"name": "C Phase Charging Current", "type": "U16", "rw": "RO", "unit": "A", "scale": 10},
+    10015: {"name": "Charging Power", "type": "U16", "rw": "RO", "unit": "KW", "scale": 10},
+    10016: {"name": "Charging Capacity", "type": "U16", "rw": "RO", "unit": "KWH", "scale": 10},
+    # Status
+    10017: {"name": "Charging Station Status", "type": "U16", "rw": "RO", "unit": None,
+            "desc": "00=idle(plugado), 01=idle(desplugado), 02=handshake, 03=carregando, 04=completo, 05=alarme, 06=agendado, 07=manutencao, 08=falha, 09=upgrade, 10=interrompido(PV insuficiente)"},
+    10018: {"name": "Communication Connection Status", "type": "U16", "rw": "RO", "unit": None,
+            "desc": "Bitmap: bit0=WiFi, bit1=IoT cloud, bit2=inversor, bit3=MID medidor, bit4=GW medidor, bit5=EMS"},
+    10019: {"name": "Plug and Charge Function Status", "type": "U16", "rw": "RW", "unit": None,
+            "desc": "0=off, 1=on"},
+    # Reserva e Agendamento
+    10020: {"name": "Reservation Status", "type": "U16", "rw": "RW", "unit": None,
+            "desc": "0=nao efetivo, 1=uso unico, 2=permanente"},
+    10021: {"name": "Reservation Start Time", "type": "U16", "rw": "RW", "unit": None,
+            "desc": "Hora e minuto em hexadecimal (ex: 0x0C1E = 12:30)"},
+    10022: {"name": "Reservation Charging Duration", "type": "U16", "rw": "RW", "unit": "min"},
+    # Configuracao de fase
+    10023: {"name": "Single/Three-Phase Switching", "type": "U16", "rw": "RW", "unit": None,
+            "desc": "0=off, 1=on - alternancia automatica de fase"},
+    # Potencia minima e DLM
+    10024: {"name": "Maintain Minimum Charging Power", "type": "U16", "rw": "RW", "unit": None,
+            "desc": "0=off, 1=on - manter potencia minima com suporte da rede/bateria"},
+    10025: {"name": "Dynamic Load Management", "type": "U16", "rw": "RW", "unit": None,
+            "desc": "0=off, 1=on - controle dinamico de carga baseado no disjuntor"},
+    10026: {"name": "Household Circuit Breaker Rated Current", "type": "U16", "rw": "RW", "unit": "A"},
+    10027: {"name": "Maximum Charging Capacity", "type": "U16", "rw": "RW", "unit": "KWH", "scale": 10},
+    10028: {"name": "Minimum Charging Capacity", "type": "U16", "rw": "RW", "unit": "KWH", "scale": 10},
+    10029: {"name": "Maximum Charging Power", "type": "U16", "rw": "RW", "unit": "KW", "scale": 10,
+            "desc": "7kW mono: 1.4-7kW, 11kW tri: 4.2-11kW, 22kW tri: 4.2-22kW"},
+    # Bateria e modo avancado
+    10030: {"name": "Battery Discharge SOC Value", "type": "U16", "rw": "RW", "unit": "%",
+            "desc": "SOC limite para parar descarga da bateria para o carregador"},
+    10032: {"name": "Current Advanced Charging Mode", "type": "U16", "rw": "RW", "unit": None,
+            "desc": "0=rapido, 1=PV, 2=PV+bateria"},
+    # Controle liga/desliga
+    10060: {"name": "Turn On/Off Charging", "type": "U16", "rw": "RW", "unit": None,
+            "desc": "1=desligar, 2=ligar"},
+    10061: {"name": "Charge Amount Available", "type": "U32", "rw": "RO", "unit": None, "scale": 100},
+    10063: {"name": "Charge Duration", "type": "U32", "rw": "RO", "unit": "s"},
+    10065: {"name": "Accumulated Historical Electricity", "type": "U32", "rw": "RO", "unit": "KWH", "scale": 10},
+    # Conexao do veiculo
+    10075: {"name": "Car Connection Status", "type": "U16", "rw": "RO", "unit": None,
+            "desc": "0=desconectado, 1=meia conexao, 2=conectado"},
+    10076: {"name": "Charge Starting Mode", "type": "U16", "rw": "RO", "unit": None,
+            "desc": "1=RFID, 2=admin local, 3=VIN, 4=carteira, 5=plug-and-charge, 6=agendamento, 7=bluetooth"},
+    10077: {"name": "Charging Strategy", "type": "U16", "rw": "RO", "unit": None,
+            "desc": "0=auto, 1=por tempo, 2=por valor, 3=por quantidade kWh"},
+    10108: {"name": "Charging Power Source", "type": "U16", "rw": "RO", "unit": None,
+            "desc": "Bitmap: bit0=rede, bit1=PV, bit2=bateria, bit3-7=reservado"},
+    # RFID
+    10500: {"name": "Charging Card Number", "type": "STR", "rw": "RO", "size": 7},
+    10507: {"name": "Add RFID Card Number", "type": "STR", "rw": "RW", "size": 7},
+    10514: {"name": "Delete RFID Card Number", "type": "STR", "rw": "RW", "size": 7},
+    10521: {"name": "Query RFID Card Number", "type": "STR", "rw": "RO", "size": 70},
+    # Alarmes IoT
+    30000: {"name": "Alarm Information (IoT)", "type": "U16", "rw": "RO", "unit": None},
+}
+
+CHARGING_STATION_STATUS = {
+    0: "idle_plugado",
+    1: "idle_desplugado",
+    2: "handshake",
+    3: "carregando",
+    4: "completo",
+    5: "alarme",
+    6: "agendado",
+    7: "manutencao",
+    8: "falha",
+    9: "upgrade_sistema",
+    10: "interrompido_pv",
+}
+
+CHARGING_STATION_STATUS_LABELS = {
+    "idle_plugado": "Ocioso (plugado)",
+    "idle_desplugado": "Disponivel",
+    "handshake": "Conectando veiculo",
+    "carregando": "Carregando",
+    "completo": "Carga completa",
+    "alarme": "Alarme",
+    "agendado": "Agendado",
+    "manutencao": "Em manutencao",
+    "falha": "Falha ao iniciar",
+    "upgrade_sistema": "Atualizando firmware",
+    "interrompido_pv": "Interrompido (PV insuficiente)",
+}
+
+CHARGING_MODES = {
+    0: "rapido",
+    1: "prioridade_solar",
+    2: "pv_bateria",
+}
+
+CAR_CONNECTION_STATUS = {
+    0: "desconectado",
+    1: "meia_conexao",
+    2: "conectado",
+}
+
+CHARGE_STARTING_MODES = {
+    1: "rfid",
+    2: "admin_local",
+    3: "vin",
+    4: "carteira",
+    5: "plug_and_charge",
+    6: "agendamento",
+    7: "bluetooth",
+}
+
+# ============================================================================
 # 1. MODELOS DE DADOS
 # ============================================================================
 
@@ -83,16 +212,26 @@ class UnidadeHabitacional:
 
 @dataclass
 class Carregador:
-    """Carregador GoodWe HCA G2 instalado no condominio."""
+    """Carregador GoodWe HCA G2 instalado no condominio.
+    Specs reais: Datasheet GW_HCA-G2 + Mapa MODBUS HCA G2."""
     id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
     modelo: str = "GW11K-HCA-20"
     potencia_kw: float = 11.0
     condominio_id: str = ""
-    status: str = "disponivel"  # disponivel, em_uso, manutencao, offline
+    status: str = "idle_desplugado"
     localizacao: str = ""
-    protocolo: str = "OCPP 1.6J"
-    conectividade: str = "RS-485 + LAN + Wi-Fi + Bluetooth"
+    protocolo: str = "Modbus TCP + OCPP 1.6J"
+    conectividade: str = "RS-485 (x2) + LAN + Wi-Fi + Bluetooth"
+    grau_protecao: str = "IP66"
     sessao_atual_id: Optional[str] = None
+    modo_carregamento: str = "rapido"
+    dlm_ativo: bool = False
+    disjuntor_corrente_a: float = 32.0
+    conexao_veiculo: str = "desconectado"
+    firmware_version: str = "2.1.4"
+    serial_number: str = field(default_factory=lambda: f"HCA{random.randint(100000,999999)}")
+    energia_acumulada_kwh: float = 0.0
+    fonte_energia: str = "rede"
 
 
 @dataclass
@@ -131,35 +270,152 @@ class Fatura:
 
 class GoodWeAPISimulator:
     """
-    Simula a API GoodWe para o EV Charger FIAP.
-    Em producao, conectaria via OCPP/MODBUS ao hardware real.
-    Retorna dados no formato JSON compativel com a API GoodWe.
+    Simula a API GoodWe para o EV Charger FIAP (HCA G2).
+    Baseado no Mapa MODBUS HCA G2 real (Assets/Mapa MODBUS_HCA G2.pdf).
+    Em producao, conectaria via Modbus TCP (porta 502) ao hardware real.
+    Comunicacao serial: 9600 baud, 8N1.
     """
+
+    @staticmethod
+    def ler_registradores(carregador: Carregador) -> dict:
+        """Simula leitura dos registradores Modbus do carregador HCA G2."""
+        is_trifasico = carregador.modelo in ("GW11K-HCA-20", "GW22K-HCA-20")
+        tensao_nominal = 380 if is_trifasico else 220
+        corrente_nominal = 32 if carregador.modelo != "GW11K-HCA-20" else 16
+
+        em_carga = carregador.status == "carregando"
+        potencia_atual = random.uniform(
+            carregador.potencia_kw * 0.6, carregador.potencia_kw
+        ) if em_carga else 0.0
+
+        corrente_a = (potencia_atual * 1000 / tensao_nominal) if em_carga else 0.0
+
+        status_code = {v: k for k, v in CHARGING_STATION_STATUS.items()}.get(
+            carregador.status, 1)
+        conexao_code = {v: k for k, v in CAR_CONNECTION_STATUS.items()}.get(
+            carregador.conexao_veiculo, 0)
+
+        fonte_bitmap = 0x01
+        if carregador.fonte_energia in ("pv", "prioridade_solar"):
+            fonte_bitmap = 0x02
+        elif carregador.fonte_energia == "pv_bateria":
+            fonte_bitmap = 0x06
+        elif carregador.fonte_energia == "rede_pv":
+            fonte_bitmap = 0x03
+
+        regs = {
+            10000: 0,
+            10001: 0,
+            10002: 0,
+            10003: 0,
+            10009: round(random.uniform(tensao_nominal - 5, tensao_nominal + 5) * 10),
+            10012: round(corrente_a * 10) if em_carga else 0,
+            10015: round(potencia_atual * 10),
+            10016: round(carregador.energia_acumulada_kwh * 10),
+            10017: status_code,
+            10018: 0b00111111,
+            10019: 0,
+            10020: 0,
+            10023: 1 if is_trifasico else 0,
+            10024: 0,
+            10025: 1 if carregador.dlm_ativo else 0,
+            10026: round(carregador.disjuntor_corrente_a),
+            10029: round(carregador.potencia_kw * 10),
+            10032: {v: k for k, v in CHARGING_MODES.items()}.get(
+                carregador.modo_carregamento, 0),
+            10060: 2,
+            10065: round(carregador.energia_acumulada_kwh * 10),
+            10075: conexao_code,
+            10108: fonte_bitmap,
+        }
+
+        if is_trifasico:
+            regs[10010] = round(random.uniform(tensao_nominal - 5, tensao_nominal + 5) * 10)
+            regs[10011] = round(random.uniform(tensao_nominal - 5, tensao_nominal + 5) * 10)
+            regs[10013] = round(corrente_a * 10) if em_carga else 0
+            regs[10014] = round(corrente_a * 10) if em_carga else 0
+
+        return regs
 
     @staticmethod
     def get_charger_status(carregador: Carregador) -> dict:
         """Retorna status operacional do carregador (simulado)."""
+        regs = GoodWeAPISimulator.ler_registradores(carregador)
+        is_trifasico = carregador.modelo in ("GW11K-HCA-20", "GW22K-HCA-20")
+
+        status_label = CHARGING_STATION_STATUS_LABELS.get(
+            carregador.status, carregador.status)
+
         return {
             "device_id": carregador.id,
+            "serial_number": carregador.serial_number,
             "model": carregador.modelo,
             "status": carregador.status,
+            "status_label": status_label,
+            "status_code": regs[10017],
             "power": f"{carregador.potencia_kw}kW",
+            "protection": carregador.grau_protecao,
             "timestamp": datetime.now().isoformat(),
             "protocol": carregador.protocolo,
+            "charging_mode": carregador.modo_carregamento,
             "connectivity": {
-                "wifi": True,
-                "lan": True,
-                "rs485": True,
-                "bluetooth": True
+                "wifi": bool(regs[10018] & 0x01),
+                "iot_cloud": bool(regs[10018] & 0x02),
+                "inverter": bool(regs[10018] & 0x04),
+                "mid_meter": bool(regs[10018] & 0x08),
+                "gw_meter": bool(regs[10018] & 0x10),
+                "ems": bool(regs[10018] & 0x20),
             },
+            "car_connection": carregador.conexao_veiculo,
+            "dlm_active": carregador.dlm_ativo,
+            "breaker_current_a": carregador.disjuntor_corrente_a,
+            "power_source": carregador.fonte_energia,
             "temperature_c": round(random.uniform(25, 45), 1),
-            "firmware_version": "2.1.4",
-            "uptime_hours": random.randint(100, 5000)
+            "firmware_version": carregador.firmware_version,
+            "accumulated_kwh": round(carregador.energia_acumulada_kwh, 1),
+            "uptime_hours": random.randint(100, 5000),
+            "is_three_phase": is_trifasico,
         }
 
     @staticmethod
+    def get_meter_values(carregador: Carregador) -> dict:
+        """Retorna leituras do medidor Modbus (simulado).
+        Regs 10009-10016: tensao, corrente, potencia, capacidade."""
+        regs = GoodWeAPISimulator.ler_registradores(carregador)
+        is_trifasico = carregador.modelo in ("GW11K-HCA-20", "GW22K-HCA-20")
+        tensao_nominal = 380 if is_trifasico else 220
+
+        meter = {
+            "device_id": carregador.id,
+            "meter_values": {
+                "voltage_a_v": round(regs[10009] / 10, 1),
+                "current_a_a": round(regs[10012] / 10, 1),
+                "power_kw": round(regs[10015] / 10, 2),
+                "energy_kwh": round(regs[10016] / 10, 2),
+                "frequency_hz": round(random.uniform(59.8, 60.2), 1),
+                "power_factor": round(random.uniform(0.95, 1.0), 3),
+            },
+            "timestamp": datetime.now().isoformat(),
+            "modbus_registers": {
+                "reg_10009": regs[10009],
+                "reg_10012": regs[10012],
+                "reg_10015": regs[10015],
+                "reg_10016": regs[10016],
+            }
+        }
+
+        if is_trifasico:
+            meter["meter_values"]["voltage_b_v"] = round(regs.get(10010, 0) / 10, 1)
+            meter["meter_values"]["voltage_c_v"] = round(regs.get(10011, 0) / 10, 1)
+            meter["meter_values"]["current_b_a"] = round(regs.get(10013, 0) / 10, 1)
+            meter["meter_values"]["current_c_a"] = round(regs.get(10014, 0) / 10, 1)
+
+        return meter
+
+    @staticmethod
     def start_charging(carregador: Carregador, rfid_tag: str) -> dict:
-        """Inicia sessao de recarga via RFID (simulado)."""
+        """Inicia sessao de recarga via RFID (simulado).
+        Escreve nos regs 10060 (ligar) e le 10017 (status)."""
         return {
             "action": "RemoteStartTransaction",
             "device_id": carregador.id,
@@ -167,35 +423,22 @@ class GoodWeAPISimulator:
             "status": "Accepted",
             "transaction_id": str(uuid.uuid4())[:8],
             "timestamp": datetime.now().isoformat(),
-            "max_power_kw": carregador.potencia_kw
+            "max_power_kw": carregador.potencia_kw,
+            "charging_mode": carregador.modo_carregamento,
+            "modbus_write": {"reg_10060": 2},
         }
 
     @staticmethod
     def stop_charging(carregador: Carregador, energia_kwh: float) -> dict:
-        """Finaliza sessao de recarga (simulado)."""
+        """Finaliza sessao de recarga (simulado).
+        Escreve no reg 10060 (desligar) e le 10016 (energia)."""
         return {
             "action": "RemoteStopTransaction",
             "device_id": carregador.id,
             "status": "Accepted",
             "energy_delivered_kwh": round(energia_kwh, 2),
-            "timestamp": datetime.now().isoformat()
-        }
-
-    @staticmethod
-    def get_meter_values(carregador: Carregador) -> dict:
-        """Retorna leituras do medidor MODBUS (simulado)."""
-        potencia_atual = random.uniform(0, carregador.potencia_kw)
-        return {
-            "device_id": carregador.id,
-            "meter_values": {
-                "voltage_v": round(random.uniform(218, 232), 1),
-                "current_a": round(potencia_atual * 1000 / 220, 1),
-                "power_kw": round(potencia_atual, 2),
-                "energy_kwh": round(random.uniform(0, 50), 2),
-                "frequency_hz": round(random.uniform(59.8, 60.2), 1),
-                "power_factor": round(random.uniform(0.95, 1.0), 3)
-            },
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "modbus_write": {"reg_10060": 1},
         }
 
 
@@ -431,7 +674,6 @@ class MotorIA:
     # ---- CONVERSACAO (SINDICO VIRTUAL) ----
 
     @staticmethod
-    @staticmethod
     def _gemini_disponivel() -> bool:
         """Verifica se a API do Google Gemini esta configurada."""
         return bool(os.environ.get("GEMINI_API_KEY"))
@@ -655,7 +897,7 @@ class GerenciadorSessoes:
                        carregador: Carregador,
                        tarifa_base: float) -> SessaoRecarga:
         """Inicia uma nova sessao de recarga."""
-        if carregador.status != "disponivel":
+        if carregador.status not in ("idle_desplugado", "idle_plugado"):
             raise ValueError(f"Carregador {carregador.id} nao esta disponivel "
                            f"(status: {carregador.status})")
 
@@ -675,7 +917,8 @@ class GerenciadorSessoes:
         rfid = unidade.rfid_cards[0] if unidade.rfid_cards else "RFID-DEFAULT"
         self.goodwe_api.start_charging(carregador, rfid)
 
-        carregador.status = "em_uso"
+        carregador.status = "carregando"
+        carregador.conexao_veiculo = "conectado"
         carregador.sessao_atual_id = sessao.id
         self.sessoes_ativas[carregador.id] = sessao
         self.sessoes.append(sessao)
@@ -703,7 +946,9 @@ class GerenciadorSessoes:
         # Simular parada via GoodWe API
         self.goodwe_api.stop_charging(carregador, energia_kwh)
 
-        carregador.status = "disponivel"
+        carregador.status = "idle_desplugado"
+        carregador.conexao_veiculo = "desconectado"
+        carregador.energia_acumulada_kwh += energia_kwh
         carregador.sessao_atual_id = None
         del self.sessoes_ativas[carregador.id]
 
@@ -826,6 +1071,11 @@ class EVChargeOps:
             )
             self.carregadores.append(c)
 
+        # Habilitar DLM nos carregadores trifasicos
+        for c in self.carregadores:
+            if c.modelo in ("GW11K-HCA-20", "GW22K-HCA-20"):
+                c.dlm_ativo = True
+
         # Criar unidades habitacionais
         moradores = [
             ("101", "A", "Ana Silva", ["RFID-A101-01"]),
@@ -892,6 +1142,7 @@ class EVChargeOps:
                     potencia_media_kw=carregador.potencia_kw
                 )
                 self.gerenciador.sessoes.append(sessao)
+                carregador.energia_acumulada_kwh += energia
                 sessoes_geradas += 1
 
         print(f"  {sessoes_geradas} sessoes historicas geradas ({dias} dias)")
@@ -931,7 +1182,7 @@ class EVChargeOps:
             dist_tarifa[s.tipo_tarifa] += 1
 
         # Carregadores disponiveis agora
-        disponiveis = sum(1 for c in self.carregadores if c.status == "disponivel")
+        disponiveis = sum(1 for c in self.carregadores if c.status in ("idle_desplugado", "idle_plugado"))
 
         # Horarios mais utilizados
         horas = defaultdict(int)
@@ -1264,7 +1515,8 @@ def gerar_relatorio_pdf(plataforma: EVChargeOps, pasta_saida: str, save=True):
     pdf.subtitulo('Camada Física')
     pdf.corpo(
         'Hardware GoodWe Linha HCA G2 (modelos GW7K, GW11K, GW22K). '
-        'Comunicação via protocolos industriais MODBUS (RS-485) e OCPP 1.6J. '
+        'Comunicação via Modbus TCP e protocolos industriais MODBUS RTU (RS-485) e OCPP 1.6J. '
+        'Proteção IP66 (carregador) e IP55 (plugue de carregamento). '
         'Autenticação por RFID (até 10 cartões por carregador). '
         'Conectividade: RS-485 + LAN + Wi-Fi + Bluetooth integrados.'
     )
@@ -1382,11 +1634,14 @@ def gerar_relatorio_pdf(plataforma: EVChargeOps, pasta_saida: str, save=True):
 
     pdf.subtitulo('5.1 GoodWe API (Simulada)')
     pdf.corpo(
-        'Simulação da API GoodWe para os carregadores EV Charger FIAP. '
-        'Implementa operações OCPP: RemoteStartTransaction, RemoteStopTransaction, '
-        'MeterValues. Retorna dados em formato JSON: status, potência, temperatura, '
-        'firmware, tensão, corrente, fator de potência. '
-        'Em produção, conectaria diretamente ao hardware via OCPP 1.6J.'
+        'Simulação da API GoodWe baseada no Mapa de Registradores Modbus real '
+        'do HCA G2 (V1.0.15). Implementa leitura dos registradores 10000-30015: '
+        'status da estação (reg 10017, 11 estados), tensão por fase (regs 10009-10011), '
+        'corrente (regs 10012-10014), potência (reg 10015), energia acumulada (reg 10065). '
+        'Suporta escrita: liga/desliga (reg 10060), modo de carregamento (reg 10032), '
+        'DLM (reg 10025), reserva (reg 10020). '
+        'Operações OCPP: RemoteStartTransaction, RemoteStopTransaction, MeterValues. '
+        'Em produção, conectaria via Modbus TCP (porta 502, 9600 baud, 8N1).'
     )
 
     pdf.subtitulo('5.2 Open Charge Map API')
@@ -1405,6 +1660,45 @@ def gerar_relatorio_pdf(plataforma: EVChargeOps, pasta_saida: str, save=True):
         'Complementa o Open Charge Map com dados de avaliação (rating), '
         'fotos e horário de funcionamento. Permite ao morador encontrar '
         'alternativas de recarga na região.'
+    )
+
+    # --- 5.5 HARDWARE HCA G2 ---
+    pdf.add_page()
+    pdf.titulo_secao('5b', 'Hardware GoodWe HCA G2')
+
+    pdf.subtitulo('Modelos e Especificações')
+    pdf.corpo(
+        'O EV ChargeOps é construído sobre a linha de carregadores GoodWe HCA G2, '
+        'segunda geração, com três modelos disponíveis:'
+    )
+    pdf.corpo(
+        '- GW7K-HCA-20: 7 kW, monofásico (220V/32A), conector IEC Tipo 2\n'
+        '- GW11K-HCA-20: 11 kW, trifásico (380V/16A), conector IEC Tipo 2\n'
+        '- GW22K-HCA-20: 22 kW, trifásico (380V/32A), conector IEC Tipo 2\n\n'
+        'Proteção IP66 (carregador) / IP55 (plugue). DPS Tipo III integrado. '
+        'Certificação ANATEL (06795-24-02673), IEC 61851-1, IEC 62311, IEC 62955.'
+    )
+
+    pdf.subtitulo('Modos de Carregamento')
+    pdf.corpo(
+        'O HCA G2 suporta cinco modos de operação:\n'
+        '1. Rápido: potência nominal usando rede elétrica, PV ou bateria\n'
+        '2. Prioridade Solar: usa apenas excedente fotovoltaico\n'
+        '3. PV + Bateria: combina energia solar e armazenamento\n'
+        '4. Agendamento: recarga programada por horário\n'
+        '5. Controle Dinâmico de Carga (DLM): ajusta potência com base '
+        'no disjuntor do condomínio para evitar sobrecarga da rede'
+    )
+
+    pdf.subtitulo('Comunicação Modbus TCP')
+    pdf.corpo(
+        'O carregador expõe ~80 registradores via Modbus TCP (9600 baud, 8N1). '
+        'Faixas principais:\n'
+        '- 10000-10039: controle, status, tensão, corrente, potência, modos\n'
+        '- 10040-10108: SN, firmware, energia acumulada, conexão veículo, fonte\n'
+        '- 10500-10521: gerenciamento de cartões RFID (até 10 cartões)\n'
+        '- 20000-20098: atualização de firmware OTA\n'
+        '- 30000-30015: alarmes IoT'
     )
 
     # --- 6. RESULTADOS SIMULADOS ---
@@ -1697,7 +1991,7 @@ def gerar_apresentacao_ppt(plataforma: EVChargeOps, pasta_saida: str, save=True)
                     2, 2.3, 9, 1.3, AZUL_ESCURO)
     add_box_destaque(slide, "CAMADA DE CONECTIVIDADE\nRede / Internet (LAN + Wi-Fi + OCPP)",
                     2, 3.8, 9, 1.3, AZUL_MEDIO)
-    add_box_destaque(slide, "CAMADA FÍSICA\nEV Charger GoodWe HCA G2 | MODBUS | RFID",
+    add_box_destaque(slide, "CAMADA FÍSICA\nGoodWe HCA G2 (IP66) | Modbus TCP | RFID | DPS III",
                     2, 5.3, 9, 1.3, RGBColor(80, 80, 80))
 
     # =====================================================================
@@ -1758,15 +2052,54 @@ def gerar_apresentacao_ppt(plataforma: EVChargeOps, pasta_saida: str, save=True)
         p2.space_before = Pt(12)
 
     # =====================================================================
+    # SLIDE 6b: MODOS DE CARREGAMENTO HCA G2
+    # =====================================================================
+    slide = add_slide_limpo()
+    add_titulo_slide(slide, "Modos de Carregamento HCA G2",
+                    "5 modos reais do hardware GoodWe (Modbus reg 10032)")
+
+    modos = [
+        ("Rápido", "Potência nominal\nRede + PV + Bateria", AZUL_ESCURO),
+        ("Prioridade Solar", "Apenas excedente\nfotovoltaico", RGBColor(42, 157, 143)),
+        ("PV + Bateria", "Solar + armazenamento\ncombinados", AZUL_MEDIO),
+        ("Agendamento", "Recarga programada\npor horário", RGBColor(244, 162, 97)),
+        ("DLM", "Controle dinâmico\nvs. disjuntor", VERMELHO),
+    ]
+
+    for i, (titulo, desc, cor) in enumerate(modos):
+        x = 0.4 + i * 2.55
+        shape = slide.shapes.add_shape(
+            MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(2.5),
+            Inches(2.3), Inches(3.5))
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = cor
+        shape.line.fill.background()
+        tf = shape.text_frame
+        tf.word_wrap = True
+        p = tf.paragraphs[0]
+        p.alignment = PP_ALIGN.CENTER
+        run = p.add_run()
+        run.text = titulo
+        run.font.size = Pt(18)
+        run.font.bold = True
+        run.font.color.rgb = BRANCO
+        p2 = tf.add_paragraph()
+        p2.text = desc
+        p2.font.size = Pt(13)
+        p2.font.color.rgb = RGBColor(220, 220, 220)
+        p2.alignment = PP_ALIGN.CENTER
+        p2.space_before = Pt(12)
+
+    # =====================================================================
     # SLIDE 7: INTEGRACOES
     # =====================================================================
     slide = add_slide_limpo()
     add_titulo_slide(slide, "Integrações do Ecossistema")
 
     integ = [
-        ("GoodWe API (Simulada)", "Dados operacionais dos carregadores HCA G2.\n"
-         "OCPP 1.6J: Start/Stop Transaction, MeterValues.\n"
-         'JSON: {"status":"active","power":"11kW"}'),
+        ("GoodWe Modbus TCP", "Registradores Modbus reais do HCA G2.\n"
+         "Regs 10000-30015: status, V, A, kW, modos.\n"
+         "OCPP 1.6J + DLM + 5 modos de carga."),
         ("Open Charge Map API", "Mapa público de eletropostos.\n"
          "Busca pontos próximos por GPS.\n"
          "Cruzamento infraestrutura privada x pública."),
@@ -2121,8 +2454,9 @@ def menu_principal(plataforma: EVChargeOps, pasta_saida: str):
         if opcao == "1":
             print("\n--- STATUS DOS CARREGADORES ---")
             for s in plataforma.status_carregadores():
-                print(f"  [{s['status'].upper():^12}] {s['model']} - {s['localizacao']}")
-                print(f"              Potencia: {s['power']} | Temp: {s['temperature_c']}C")
+                print(f"  [{s['status_label']:^25}] {s['model']} - {s['localizacao']}")
+                print(f"              Potencia: {s['power']} | Temp: {s['temperature_c']}C | "
+                      f"Modo: {s['charging_mode']} | DLM: {'ON' if s['dlm_active'] else 'OFF'}")
 
         elif opcao == "2":
             print("\n--- DASHBOARD DO CONDOMINIO ---")
@@ -2152,7 +2486,7 @@ def menu_principal(plataforma: EVChargeOps, pasta_saida: str):
 
             print("  Carregadores disponiveis:")
             disp = [(i, c) for i, c in enumerate(plataforma.carregadores)
-                    if c.status == "disponivel"]
+                    if c.status in ("idle_desplugado", "idle_plugado")]
             if not disp:
                 print("  Nenhum carregador disponivel no momento.")
                 continue

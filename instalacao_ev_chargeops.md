@@ -101,10 +101,12 @@ python app_ev_chargeops.py
 ### Sindico
 - Dashboard consolidado do condominio (todas as unidades)
 - Ranking de consumo por unidade habitacional
-- Status dos 4 carregadores GoodWe HCA G2 (modelo, potencia, localizacao, telemetria)
+- Status dos 4 carregadores GoodWe HCA G2 (modelo, potencia, localizacao, telemetria Modbus, modo de carregamento, DLM)
 - Analise de IA: previsao de demanda, deteccao de anomalias, interpretacao de sessoes
 - **Sindico Virtual**: agente conversacional para consultas em linguagem natural
 - Configuracoes de tarifa (visualizacao)
+- Modos de carregamento: visualizacao dos 5 modos do HCA G2 (Rapido, Solar, PV+Bat, Agendamento, DLM)
+- Dados Modbus: registradores reais simulados com tensao por fase, corrente, potencia e status
 
 ### Administrador
 - Geracao de faturas mensais individuais por unidade
@@ -118,11 +120,27 @@ python app_ev_chargeops.py
 
 | Integracao | Descricao | Dados |
 |------------|-----------|-------|
-| **GoodWe API** | Status dos carregadores, operacoes OCPP | Simulados localmente |
+| **GoodWe Modbus TCP** | Registradores Modbus reais (10000-30015), modos de carga, DLM | Simulados localmente |
 | **Open Charge Map** | Eletropostos publicos proximos | Dados simulados realistas |
 | **Google Places** | Pontos de recarga por localizacao | Dados simulados realistas |
 
 Todas as integracoes funcionam offline com dados simulados. Nao e necessario configurar chaves de API.
+
+### Simulacao Modbus
+
+O sistema simula os registradores Modbus reais do carregador GoodWe HCA G2 (ref: Mapa MODBUS_HCA G2.pdf V1.0.15):
+
+| Registrador | Funcao | Tipo |
+|-------------|--------|------|
+| 10009-10014 | Tensao e corrente por fase (mono 220V / tri 380V) | Leitura |
+| 10015-10016 | Potencia (kW) e energia da sessao (kWh) | Leitura |
+| 10017 | Status da estacao (11 estados reais) | Leitura |
+| 10025-10026 | Controle Dinamico de Carga (DLM) e corrente disjuntor | Escrita |
+| 10032 | Modo de carregamento (rapido/solar/PV+bat) | Escrita |
+| 10060 | Liga/desliga carregador | Escrita |
+| 10065 | Energia historica acumulada (kWh) | Leitura |
+| 10075 | Status conexao do veiculo (3 estados) | Leitura |
+| 10108 | Fonte de energia (bitmap: rede/PV/bateria) | Leitura |
 
 ---
 
@@ -131,9 +149,13 @@ Todas as integracoes funcionam offline com dados simulados. Nao e necessario con
 ```
 EV challenge/
   app_ev_chargeops.py         # Aplicacao web Flask
-  ev_chargeops.py             # Motor da plataforma (backend)
+  ev_chargeops.py             # Motor da plataforma (backend + Modbus)
   instalar_ev_chargeops.py    # Instalador automatico
   instalacao_ev_chargeops.md  # Este guia
+  Assets/
+    GW_HCA-G2_Datasheet-PT.pdf    # Datasheet do carregador (specs reais)
+    GW_HCA-G2_User-Manual-PT.pdf  # Manual do usuario completo
+    Mapa MODBUS_HCA G2.pdf        # Mapa de registradores Modbus (V1.0.15)
   templates/
     login.html                # Pagina de login
     dashboard.html            # Dashboard principal (SPA)
@@ -147,6 +169,11 @@ EV challenge/
 - Os dados sao regenerados a cada reinicio da aplicacao
 - Nao requer banco de dados
 - Motor de IA com 4 dimensoes: interpretacao, preditividade, precificacao, conversacao
+- Simulacao baseada no Mapa de Registradores Modbus real do HCA G2 (~80 registradores)
+- 5 modos de carregamento: Rapido, Prioridade Solar, PV+Bateria, Agendamento, DLM
+- Controle Dinamico de Carga (DLM) para gestao da demanda condominial
+- Status do carregador com 11 estados reais conforme registrador Modbus 10017
+- Protecao IP66 (carregador) conforme datasheet GoodWe
 - Porta padrao: 5050 (pode ser alterada no codigo)
 - Para encerrar o servidor: pressione Ctrl+C no terminal
 
@@ -160,6 +187,7 @@ EV challenge/
 | ModuleNotFoundError: flask | Execute `pip install flask` no ambiente virtual |
 | ModuleNotFoundError: ev_chargeops | Certifique-se de executar na pasta `EV challenge/` |
 | Pagina em branco | Limpe o cache do navegador (Ctrl+Shift+R) |
+| Sindico Virtual sem IA | Exporte GEMINI_API_KEY para habilitar Google Gemini |
 
 ---
 
