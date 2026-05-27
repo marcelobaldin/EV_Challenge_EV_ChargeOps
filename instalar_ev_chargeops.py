@@ -57,9 +57,18 @@ def main():
 
     # 2. Instalar dependencias
     print("\n[2/3] Instalando dependencias...")
-    subprocess.run([pip_path, 'install', '--quiet', 'flask', 'google-genai'],
+    deps = ['flask', 'matplotlib', 'fpdf2', 'python-pptx', 'google-genai']
+    subprocess.run([pip_path, 'install', '--quiet'] + deps,
                    check=True, capture_output=True)
-    print("  Flask + Google GenAI instalados.")
+    print(f"  {len(deps)} pacotes instalados: {', '.join(deps)}")
+
+    # Graphviz (opcional - para diagrama de fluxo)
+    try:
+        subprocess.run([pip_path, 'install', '--quiet', 'graphviz'],
+                       check=True, capture_output=True)
+        print("  Graphviz (Python) instalado (diagrama de fluxo).")
+    except subprocess.CalledProcessError:
+        print("  Graphviz (opcional) nao instalado - diagrama de fluxo indisponivel.")
 
     # 3. Executar
     print("\n[3/3] Iniciando EV ChargeOps...")
@@ -77,6 +86,9 @@ def main():
     print("  +-----------------+-----------------+---------+")
     print()
     print("  Para encerrar: Ctrl+C")
+    print()
+    print("  Sindico Virtual com IA (opcional):")
+    print("  export GEMINI_API_KEY='sua-chave' (aistudio.google.com/apikey)")
     print("=" * 60)
     print()
 
