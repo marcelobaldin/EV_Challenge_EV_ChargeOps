@@ -417,9 +417,24 @@ def api_sindico_anomalias():
 @login_required
 @perfil_required('sindico')
 def api_sindico_previsao():
+    rel = plataforma.relatorio_regressao or plataforma.treinar_regressao()
+    if rel.get('ok'):
+        return jsonify(rel.get('previsao_compat') or {})
     sessoes_fin = [s for s in plataforma.gerenciador.sessoes if s.status == 'finalizada']
     previsao = plataforma.motor_ia.prever_demanda(sessoes_fin)
     return jsonify(previsao)
+
+
+@app.route('/api/sindico/regressao')
+@login_required
+@perfil_required('sindico')
+def api_sindico_regressao():
+    rel = plataforma.relatorio_regressao or plataforma.treinar_regressao()
+    if not rel.get('ok'):
+        return jsonify(rel), 500
+    payload = {k: v for k, v in rel.items() if k != 'previsao_compat'}
+    payload['previsao'] = rel.get('previsao_compat')
+    return jsonify(payload)
 
 
 # ============================================================================

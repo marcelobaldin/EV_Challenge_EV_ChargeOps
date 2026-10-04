@@ -46,7 +46,9 @@ for u in plat.unidades:
 ia_interp = []
 for s in sessoes[:8]:
     ia_interp.append(MotorIA.interpretar_sessao(s))
-previsao = MotorIA.prever_demanda(sessoes, dias_projecao=30)
+previsao = (plat.relatorio_regressao or {}).get("previsao_compat")
+if not previsao:
+    previsao = MotorIA.prever_demanda(sessoes, dias_projecao=30)
 
 dados_sindico = {
     "consumo_total_kwh": sum(s.energia_kwh for s in sessoes),

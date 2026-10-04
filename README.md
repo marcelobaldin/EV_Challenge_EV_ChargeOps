@@ -42,7 +42,7 @@ O Motor de IA não é um chat decorativo. Ele entra no fluxo:
 | Dimensão | Papel no protótipo |
 |---|---|
 | Interpretação | Classifica sessão (normal / prolongada / baixa eficiência) e gera alertas |
-| Preditividade | Média diária, tendência e previsão de 30 dias; alerta de expansão |
+| Preditividade | OLS vs Ridge/Lasso/ElasticNet; MAE, R², AIC, BIC; projeção 6 meses |
 | Precificação | Calcula a tarifa de cada sessão no momento do encerramento |
 | Conversação | Síndico Virtual via **OpenAI** (`OPENAI_API_KEY`); Gemini e regras locais só como fallback |
 
@@ -104,6 +104,7 @@ prototipo/
   ev_chargeops.py                  ← núcleo (sessões, Modbus, IA, rateio)
   app_ev_chargeops.py              ← Flask na porta 5050
   gerar_consumo_6meses.py          ← gera a série de 6 meses (semente 42)
+  motor_regressao.py               ← OLS vs Ridge/Lasso/ElasticNet + projeção 6 meses
   gerar_evidencias.py
   requirements.txt
   templates/login.html
@@ -137,7 +138,7 @@ Condomínio Residencial Parque Verde, série 2026-04-01 a 2026-10-04:
 - **952 sessões**, **28.501,4 kWh** no semestre (semente 42), com veículo (placa, marca, bateria, autonomia) em cada linha.
 - Frota: 15 períodos de posse, teto de 3 carros/apto; 11 ativos em 04/10; 60 dias-apto sem carro (venda sem reposição imediata).
 - Rateio do mês corrente (outubro/2026, energia + 5%): ver `evidencias/rateio_unidades.csv`.
-- Previsão IA (média móvel): tendência crescente, ~4.572 kWh no horizonte de 30 dias.
+- Previsão IA (regressão múltipla, Lasso regularizado no hold-out): MAE/R²/AIC/BIC na seção **Regressão** do síndico; projeção nov/2026–abr/2027 alimenta as recomendações.
 - Síndico Virtual (OpenAI) recebe tabelas mensais, 14 dias, frota ativa, compra/venda e kWh por placa.
 
 Arquivos em `evidencias/` e `dados/`.
@@ -152,7 +153,7 @@ A Sprint 02 implementa o que foi planejado: Python, in-memory, tarifa dinâmica,
 |---|---|---|
 | OCPP 1.6J real (WebSocket) | Ciclo de sessão + mapa Modbus simulado | Sem hardware HCA G2 no ambiente do aluno; o mapa de registradores (10000–30015) está modelado no simulador |
 | PostgreSQL em produção | Estruturas em memória | Decisão Q5 da Sprint 01: in-memory no MVP |
-| EWMA / Prophet / scikit-learn | Média móvel + tendência por metades da série | Suficiente para o papel estrutural de predição no Sprint 02; Prophet fica no roadmap |
+| EWMA / Prophet / scikit-learn | OLS + Ridge/Lasso/ElasticNet no kWh diário por apto | Hold-out cronológico; KPIs MAE/R²/AIC/BIC; seção Regressão no painel do síndico |
 | Tarifa com fator de demanda e bandeira | Ponta / intermediária / fora ponta | Os fatores 1,5 e 1,2 já diferenciam o kWh; bandeira e ocupação simultânea entram na evolução |
 | Roadmap: IA em mar/2027 e dashboard em jun/2027 | IA 4D + Flask já nesta sprint | O edital da Sprint 02 exige protótipo com lógica, IA estrutural e evidência; o dashboard foi antecipado |
 | Integração Superlógica / Condomob | Exportação CSV | Formato que a administradora já consome; API fica para v1.0 |

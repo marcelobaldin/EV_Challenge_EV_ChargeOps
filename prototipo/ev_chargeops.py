@@ -713,6 +713,9 @@ class MotorIA:
         "Rateio: Custo = soma(kWh_sessao x tarifa_sessao) + 5% taxa admin. "
         "Tarifa ANEEL: fora ponta = base; intermediaria (17-18h e 21-22h) = +20%; "
         "ponta (18-21h dia util) = +50%; fim de semana = fora ponta o dia todo. "
+        "A previsao de demanda vem de regressao multipla (OLS vs Ridge/Lasso/"
+        "ElasticNet). Use a tabela dos proximos 6 meses e as recomendacoes "
+        "derivadas dela. Nao invente KPIs. "
         "Sugira acoes (horario fora ponta, assembleia, expansao de carregador)."
     )
 
@@ -752,6 +755,10 @@ class MotorIA:
         frota_ativa = dados_condominio.get("frota_ativa") or "  (sem frota)"
         frota_eventos = dados_condominio.get("frota_eventos") or "  (sem eventos)"
         consumo_placa = dados_condominio.get("consumo_por_veiculo") or "  (sem consumo por placa)"
+        proj = dados_condominio.get("tabela_projecao") or "  (sem projecao)"
+        kpis = dados_condominio.get("kpis_regressao") or "  (sem kpis)"
+        recs = dados_condominio.get("recomendacoes_regressao") or []
+        bloco_recs = "\n".join(f"  - {r}" for r in recs) if recs else "  (sem recomendacoes)"
 
         return (
             "DADOS OPERACIONAIS DO CONDOMINIO\n"
@@ -764,7 +771,8 @@ class MotorIA:
             f"- Carregadores livres: {dados_condominio.get('carregadores_disponiveis', 0)}"
             f"/{dados_condominio.get('total_carregadores', 0)}\n"
             f"- Tendencia: {dados_condominio.get('tendencia', 'estavel')}\n"
-            f"- Previsao proximos 30 dias: {dados_condominio.get('previsao_mensal_kwh', 0)} kWh\n"
+            f"- Previsao proximo mes (regressao): {dados_condominio.get('previsao_mensal_kwh', 0)} kWh\n"
+            f"- Modelo de regressao: {dados_condominio.get('modelo_regressao', 'N/D')}\n"
             f"- Mes corrente (rateio): {dados_condominio.get('mes_referencia', 'N/D')}\n"
             f"- Rateio TOTAL do mes corrente (soma das unidades, energia+5%): R$ "
             f"{rateio.get('total_condominio_reais', 0)}\n"
@@ -773,6 +781,9 @@ class MotorIA:
             f"\nFROTA ATIVA NO FIM DO PERIODO (0 a 3 carros por apto):\n{frota_ativa}\n"
             f"\nCOMPRA E VENDA NO PERIODO:\n{frota_eventos}\n"
             f"\nCONSUMO POR VEICULO (placa, kWh no semestre):\n{consumo_placa}\n"
+            f"\nKPIs DA REGRESSAO (hold-out cronologico):\n{kpis}\n"
+            f"\nPROJECAO PROXIMOS 6 MESES (kWh por unidade):\n{proj}\n"
+            f"\nRECOMENDACOES DERIVADAS DA PROJECAO:\n{bloco_recs}\n"
             f"\nRANKING DO PERIODO (6 meses — quem recarrega mais, paga mais):\n{bloco_rank}\n"
             f"\nRATEIO DO MES CORRENTE (nao confundir com o semestre):\n{bloco_rateio}\n"
             f"\nANOMALIAS RECENTES:\n{bloco_anom}\n"
@@ -1181,6 +1192,7 @@ class EVChargeOps:
         self.motor_ia = MotorIA()
         self.ocm = OpenChargeMapIntegration()
         self.google_places = GooglePlacesIntegration()
+        self.relatorio_regressao: Optional[dict] = None
 
     # ---- SETUP INICIAL ----
 
@@ -1344,6 +1356,25 @@ class EVChargeOps:
             self.carregar_historico_sessoes(str(caminho))
         else:
             self.gerar_historico_simulado(dias=dias_fallback)
+        self.treinar_regressao()
+
+    def treinar_regressao(self) -> dict:
+        """Treina OLS vs regularizacao e guarda o relatorio no orquestrador."""
+        try:
+            from motor_regressao import treinar
+            rel = treinar()
+        except Exception as exc:
+            print(f"  [Regressao] Erro: {exc}")
+            rel = {"ok": False, "erro": str(exc)}
+        self.relatorio_regressao = rel
+        if rel.get("ok"):
+            depois = rel.get("depois", {}).get("teste", {})
+            print(
+                f"  Regressao: {rel.get('modelo_escolhido')} | "
+                f"MAE teste={depois.get('MAE')} R2={depois.get('R2')} "
+                f"AIC={depois.get('AIC')} BIC={depois.get('BIC')}"
+            )
+        return rel
 
     def montar_serie_historica(self, dias_recentes: int = 14) -> dict:
         """Empacota a serie de 6 meses (CSV diario/mensal + sessoes em memoria) para o GPT."""
@@ -1547,8 +1578,12 @@ class EVChargeOps:
         sessoes = self.gerenciador.sessoes
         sessoes_fin = [s for s in sessoes if s.status == "finalizada"]
 
-        # Preditividade
-        previsao = self.motor_ia.prever_demanda(sessoes_fin)
+        # Preditividade (regressao multipla; fallback media movel)
+        rel = self.relatorio_regressao if self.relatorio_regressao else self.treinar_regressao()
+        if rel.get("ok"):
+            previsao = rel.get("previsao_compat") or {}
+        else:
+            previsao = self.motor_ia.prever_demanda(sessoes_fin)
 
         # Anomalias
         anomalias = self.motor_ia.detectar_anomalias(sessoes_fin)
@@ -1599,13 +1634,18 @@ class EVChargeOps:
             "frota_ativa": frota["frota_ativa"],
             "frota_eventos": frota["frota_eventos"],
             "consumo_por_veiculo": frota["consumo_por_veiculo"],
+            "tabela_projecao": rel.get("tabela_projecao", "") if rel.get("ok") else "",
+            "kpis_regressao": rel.get("kpis_texto", "") if rel.get("ok") else "",
+            "recomendacoes_regressao": rel.get("recomendacoes", []) if rel.get("ok") else [],
+            "modelo_regressao": rel.get("modelo_escolhido", "") if rel.get("ok") else "",
         }
 
         return {
             "previsao_demanda": previsao,
             "anomalias": anomalias,
             "interpretacoes": interpretacoes,
-            "dados_sindico": dados_sindico
+            "dados_sindico": dados_sindico,
+            "regressao": rel if rel.get("ok") else {"ok": False},
         }
 
     # ---- BUSCA ELETROPOSTOS EXTERNOS ----

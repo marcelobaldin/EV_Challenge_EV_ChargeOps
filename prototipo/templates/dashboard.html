@@ -907,6 +907,10 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 018 8c0 2.5-1 4-2 5.5L12 22l-6-6.5C5 14 4 12.5 4 10a8 8 0 018-8z"/><circle cx="12" cy="10" r="3"/></svg>
                 Analise IA
             </div>
+            <div class="nav-item" data-section="sec-regressao" onclick="showSection('sec-regressao', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Regressao
+            </div>
             <div class="nav-item" data-section="sec-sessoes-todas" onclick="showSection('sec-sessoes-todas', this)">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 Todas as Sessoes
@@ -1099,6 +1103,12 @@
             <div class="section" id="sec-analise">
                 <div class="loading" id="load-analise"><div class="spinner"></div><br>Carregando...</div>
                 <div id="content-analise" style="display:none;"></div>
+            </div>
+
+            <!-- Regressao -->
+            <div class="section" id="sec-regressao">
+                <div class="loading" id="load-regressao"><div class="spinner"></div><br>Treinando / carregando modelo...</div>
+                <div id="content-regressao" style="display:none;"></div>
             </div>
 
             <!-- Todas as Sessoes -->
@@ -1316,6 +1326,7 @@ const SECTION_TITLES = {
     'sec-ranking': 'Ranking Consumo',
     'sec-carregadores': 'Carregadores',
     'sec-analise': 'Analise IA',
+    'sec-regressao': 'Regressao multipla',
     'sec-sessoes-todas': 'Todas as Sessoes',
     'sec-config': 'Configuracoes',
     'sec-faturamento': 'Faturamento',
@@ -1359,6 +1370,7 @@ function loadSectionData(name) {
         else if (name === 'sec-ranking') loadSindicoRanking();
         else if (name === 'sec-carregadores') loadSindicoCarregadores();
         else if (name === 'sec-analise') loadSindicoAnalise();
+        else if (name === 'sec-regressao') loadSindicoRegressao();
         else if (name === 'sec-sessoes-todas') loadSindicoSessoes();
         else if (name === 'sec-config') loadSindicoConfig();
     } else if (PERFIL === 'administrador') {
@@ -1916,6 +1928,113 @@ async function loadSindicoAnalise() {
         showContent('analise');
     } catch (e) {
         showError('analise', 'Erro ao carregar analise IA: ' + e.message);
+    }
+}
+
+function kpiRow(label, a, b) {
+    const fmt = (v) => (v == null ? '-' : v);
+    return '<tr><td>' + label + '</td><td>' + fmt(a) + '</td><td>' + fmt(b) + '</td></tr>';
+}
+
+async function loadSindicoRegressao() {
+    if (cache['sindico-regressao']) { showContent('regressao'); return; }
+    showLoading('regressao');
+    try {
+        const d = await fetchAPI('/api/sindico/regressao');
+        cache['sindico-regressao'] = d;
+        const antes = d.antes || {};
+        const depois = d.depois || {};
+        const ta = antes.teste || {};
+        const td = depois.teste || {};
+        const proj = d.projecao || {};
+        const meses = proj.meses || [];
+        const recs = d.recomendacoes || [];
+        const unidades = (meses[0] && meses[0].por_unidade) ? Object.keys(meses[0].por_unidade) : [];
+
+        let html = '';
+        html += '<div class="stats-grid">';
+        html += statCard('Modelo', d.modelo_escolhido || '-', 'green');
+        html += statCard('Observacoes', d.n_observacoes, 'blue');
+        html += statCard('Treino / Teste', (d.n_treino || '-') + ' / ' + (d.n_teste || '-'), 'purple');
+        html += statCard('Corte', d.data_corte || '-', 'yellow');
+        html += statCard('Total 6 meses', (proj.total_6m_kwh || 0) + ' kWh', 'accent');
+        html += statCard('Custo 6 meses', fmtR$(proj.custo_6m || 0), 'orange');
+        html += '</div>';
+
+        html += '<div class="info-card"><h3>Validacao hold-out (antes vs depois da regularizacao)</h3>';
+        html += '<p style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Alvo: <strong>kWh semanal por unidade</strong> (o diario tem ~42% de zeros e R2 fica ~0.28). Features: tendencia, n de veiculos, bateria e dummy de apto. Corte cronologico em ' + (d.data_corte || '-') + '.</p>';
+        html += '<div class="table-scroll"><table><thead><tr><th>KPI</th><th>ANTES — ' + (antes.nome || 'OLS') + '</th><th>DEPOIS — ' + (depois.nome || '-') + '</th></tr></thead><tbody>';
+        ['MAE','MedAE','RMSE','MSE','MAPE_pct','R2','R2_ajustado','AIC','AICc','BIC'].forEach(k => {
+            html += kpiRow(k, ta[k], td[k]);
+        });
+        html += '</tbody></table></div>';
+        if (d.nota) html += '<p style="margin-top:10px;font-size:13px;">' + d.nota + '</p>';
+        html += '</div>';
+
+        const comp = d.comparativo || {};
+        html += '<div class="info-card"><h3>Ridge, Lasso e ElasticNet (teste)</h3>';
+        html += '<div class="table-scroll"><table><thead><tr><th>Modelo</th><th>MAE</th><th>RMSE</th><th>R2</th><th>AIC</th><th>BIC</th><th>alpha</th></tr></thead><tbody>';
+        Object.keys(comp).forEach(nome => {
+            const m = comp[nome];
+            const t = m.teste || {};
+            html += '<tr><td>' + m.nome + '</td><td>' + (t.MAE ?? '-') + '</td><td>' + (t.RMSE ?? '-') + '</td><td>' + (t.R2 ?? '-') + '</td><td>' + (t.AIC ?? '-') + '</td><td>' + (t.BIC ?? '-') + '</td><td>' + (m.alpha ?? '—') + '</td></tr>';
+        });
+        html += '</tbody></table></div></div>';
+
+        html += '<div class="info-card"><h3>Coeficientes</h3>';
+        html += '<div class="charts-grid"><div><h3 style="font-size:13px;">OLS (escala original)</h3><div class="table-scroll"><table><thead><tr><th>Feature</th><th>beta</th></tr></thead><tbody>';
+        (antes.coefs || []).forEach(c => {
+            html += '<tr><td>' + c.feature + '</td><td>' + (c.beta ?? '-') + '</td></tr>';
+        });
+        html += '</tbody></table></div></div><div><h3 style="font-size:13px;">Regularizado (features padronizadas)</h3><div class="table-scroll"><table><thead><tr><th>Feature</th><th>beta</th></tr></thead><tbody>';
+        (depois.coefs || []).forEach(c => {
+            html += '<tr><td>' + c.feature + '</td><td>' + (c.beta_padronizado ?? c.beta ?? '-') + '</td></tr>';
+        });
+        html += '</tbody></table></div></div></div></div>';
+
+        html += '<div class="info-card"><h3>Projecao de consumo — proximos 6 meses (nov/2026 a abr/2027)</h3>';
+        html += '<p style="color:var(--text-dim);font-size:12px;margin-bottom:10px;">Frota congelada no estado de 04/10/2026 (compra/venda futuras nao simuladas). Custo = kWh x R$ 0,85 x 1,05.</p>';
+        html += '<div class="chart-wrap" style="height:260px;margin-bottom:16px;"><canvas id="chartProjecao"></canvas></div>';
+        html += '<div class="table-scroll"><table><thead><tr><th>Mes</th>';
+        unidades.forEach(u => { html += '<th>' + u + '</th>'; });
+        html += '<th>TOTAL</th><th>R$ est.</th></tr></thead><tbody>';
+        meses.forEach(m => {
+            html += '<tr><td>' + m.mes + '</td>';
+            unidades.forEach(u => { html += '<td>' + (m.por_unidade[u] ?? 0) + '</td>'; });
+            html += '<td><strong>' + m.total_kwh + '</strong></td><td>' + fmtR$(m.custo_estimado) + '</td></tr>';
+        });
+        html += '</tbody></table></div></div>';
+
+        html += '<div class="info-card"><h3>Recomendacoes alimentadas pela projecao</h3>';
+        recs.forEach(r => {
+            html += '<div class="anomaly-item">' + r + '</div>';
+        });
+        html += '</div>';
+
+        document.getElementById('content-regressao').innerHTML = html;
+
+        destroyChart('projecao');
+        const canvas = document.getElementById('chartProjecao');
+        if (canvas && meses.length) {
+            chartInstances['projecao'] = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: meses.map(m => m.mes),
+                    datasets: [{
+                        label: 'kWh condominio',
+                        data: meses.map(m => m.total_kwh),
+                        borderColor: '#22c55e',
+                        backgroundColor: 'rgba(34,197,94,0.15)',
+                        fill: true,
+                        tension: 0.25
+                    }]
+                },
+                options: CHART_DEFAULTS
+            });
+        }
+        showContent('regressao');
+    } catch (e) {
+        showError('regressao', 'Erro ao carregar regressao: ' + e.message);
     }
 }
 
