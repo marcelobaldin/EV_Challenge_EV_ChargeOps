@@ -33,6 +33,7 @@ plataforma = EVChargeOps()
 plataforma.setup_demo()
 plataforma.carregar_ou_gerar_historico()
 
+print(f"  Sindico Virtual: {MotorIA.status_conversa()}")
 print("  Plataforma pronta.\n")
 
 # ============================================================================
@@ -401,7 +402,10 @@ def api_sindico_chat():
     analise = plataforma.executar_analise_ia()
     dados_sindico = analise['dados_sindico']
     resposta = plataforma.motor_ia.sindico_virtual(pergunta, dados_sindico)
-    return jsonify({'resposta': resposta})
+    return jsonify({
+        'resposta': resposta,
+        'fonte': getattr(MotorIA, 'fonte_ultima', 'local'),
+    })
 
 
 @app.route('/api/sindico/anomalias')

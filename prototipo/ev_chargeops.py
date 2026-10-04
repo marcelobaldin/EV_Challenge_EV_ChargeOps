@@ -879,6 +879,17 @@ class MotorIA:
             print(f"  [Gemini] Erro: {e}")
             return ""
 
+    fonte_ultima = "local"
+
+    @staticmethod
+    def status_conversa() -> str:
+        if MotorIA._openai_disponivel():
+            modelo = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+            return f"OpenAI ({modelo})"
+        if MotorIA._gemini_disponivel():
+            return "Gemini"
+        return "regras locais (sem OPENAI_API_KEY)"
+
     @staticmethod
     def sindico_virtual(pergunta: str, dados_condominio: dict) -> str:
         """
@@ -887,13 +898,16 @@ class MotorIA:
         if MotorIA._openai_disponivel():
             resposta = MotorIA._chamar_openai(pergunta, dados_condominio)
             if resposta:
+                MotorIA.fonte_ultima = "openai"
                 return resposta
 
         if MotorIA._gemini_disponivel():
             resposta = MotorIA._chamar_gemini(pergunta, dados_condominio)
             if resposta:
+                MotorIA.fonte_ultima = "gemini"
                 return resposta
 
+        MotorIA.fonte_ultima = "local"
         return MotorIA._sindico_virtual_local(pergunta, dados_condominio)
 
     @staticmethod

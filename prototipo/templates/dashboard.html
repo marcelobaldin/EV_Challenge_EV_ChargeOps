@@ -2186,7 +2186,9 @@ async function sendChat() {
 
         const botEl = document.createElement('div');
         botEl.className = 'chat-msg bot';
-        botEl.textContent = resp.resposta || 'Desculpe, nao consegui processar sua pergunta.';
+        const fonte = resp.fonte === 'openai' ? 'OpenAI' : (resp.fonte === 'gemini' ? 'Gemini' : 'regras locais');
+        botEl.textContent = (resp.resposta || 'Desculpe, nao consegui processar sua pergunta.')
+            + '\n\n[' + fonte + ']';
         messagesDiv.appendChild(botEl);
     } catch (e) {
         const errEl = document.createElement('div');
