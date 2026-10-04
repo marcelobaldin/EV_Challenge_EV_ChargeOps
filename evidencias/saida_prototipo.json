@@ -3,6 +3,8 @@
   "carregadores": 4,
   "unidades": 8,
   "sessoes_finalizadas": 952,
+  "kwh_semestre": 28501.4,
+  "custo_semestre": 26661.83,
   "mes_referencia": "2026-10",
   "rateio": {
     "mes_referencia": "2026-10",
@@ -148,85 +150,65 @@
       "status": "fechada"
     }
   ],
-  "ia_interpretacao_amostra": [
-    {
-      "sessao_id": "7be963e4",
-      "duracao_horas": 3.65,
-      "eficiencia_pct": 76.0,
-      "classificacao": "normal",
-      "alertas": [],
-      "interpretacao": "Sessao 7be963e4: 19.4 kWh em 3.6h (normal)"
-    },
-    {
-      "sessao_id": "e106364c",
-      "duracao_horas": 2.54,
-      "eficiencia_pct": 71.3,
-      "classificacao": "normal",
-      "alertas": [],
-      "interpretacao": "Sessao e106364c: 39.9 kWh em 2.5h (normal)"
-    },
-    {
-      "sessao_id": "79492882",
-      "duracao_horas": 2.22,
-      "eficiencia_pct": 89.5,
-      "classificacao": "normal",
-      "alertas": [],
-      "interpretacao": "Sessao 79492882: 43.7 kWh em 2.2h (normal)"
-    },
-    {
-      "sessao_id": "4a9d781d",
-      "duracao_horas": 2.07,
-      "eficiencia_pct": 77.8,
-      "classificacao": "normal",
-      "alertas": [],
-      "interpretacao": "Sessao 4a9d781d: 17.7 kWh em 2.1h (normal)"
-    },
-    {
-      "sessao_id": "a5efe2b1",
-      "duracao_horas": 3.69,
-      "eficiencia_pct": 87.4,
-      "classificacao": "normal",
-      "alertas": [],
-      "interpretacao": "Sessao a5efe2b1: 22.6 kWh em 3.7h (normal)"
-    },
-    {
-      "sessao_id": "b1f05cc6",
-      "duracao_horas": 1.76,
-      "eficiencia_pct": 91.5,
-      "classificacao": "normal",
-      "alertas": [],
-      "interpretacao": "Sessao b1f05cc6: 35.4 kWh em 1.8h (normal)"
-    },
-    {
-      "sessao_id": "a298e19a",
-      "duracao_horas": 2.28,
-      "eficiencia_pct": 86.5,
-      "classificacao": "normal",
-      "alertas": [],
-      "interpretacao": "Sessao a298e19a: 43.4 kWh em 2.3h (normal)"
-    },
-    {
-      "sessao_id": "4d28e23f",
-      "duracao_horas": 3.08,
-      "eficiencia_pct": 89.4,
-      "classificacao": "normal",
-      "alertas": [],
-      "interpretacao": "Sessao 4d28e23f: 30.3 kWh em 3.1h (normal)"
-    }
-  ],
   "ia_previsao": {
     "consumo_medio_diario_kwh": 152.4,
-    "tendencia_pct": 24.9,
+    "consumo_medio_diario": 152.4,
+    "tendencia_pct": 12.0,
     "direcao_tendencia": "crescente",
-    "previsao_mensal_kwh": 4572.4,
-    "pico_estimado_kwh_dia": 405.8,
-    "media_sessoes_dia": 5.1,
+    "tendencia": "crescente",
+    "previsao_mensal_kwh": 5313.8,
+    "previsao_mensal": 5313.8,
+    "pico_estimado_kwh_dia": 370.5,
+    "pico_estimado": 370.5,
+    "media_sessoes_dia": null,
     "necessita_expansao": true,
-    "recomendacao": "ALERTA: Considerar instalacao de carregador adicional. Pico estimado excede capacidade otima."
+    "recomendacao": "ALERTA de expansao: o pico projetado e 6001 kWh/mes (media 5651). Com 4 carregadores (44 kW), recomendar assembleia para 5o ponto HCA G2.",
+    "motor": "regressao_multipla",
+    "modelo_escolhido": "Ridge (alpha=8)"
   },
-  "sindico_virtual": {
-    "Quanto o condominio gastou em kWh?": "No periodo analisado, o condominio consumiu 28501.4 kWh no total, gerando um custo de R$ 26661.83. 8 unidades utilizaram os carregadores. O consumo medio por unidade foi de 3562.7 kWh.",
-    "Como esta o rateio e as faturas?": "Existem 8 faturas abertas no valor total de R$ 634.12. O rateio e calculado automaticamente com base no consumo individual de cada unidade (kWh). A tarifa segue a precificacao dinamica da ANEEL: fora ponta (tarifa base), intermediaria (+20%) e ponta (+50%).",
-    "Precisamos de mais carregadores?": "Neste momento, 4 de 4 carregadores estao disponiveis. Todos os carregadores estao livres para uso."
+  "regressao": {
+    "ok": true,
+    "modelo": "Ridge (alpha=8)",
+    "n_observacoes": 216,
+    "data_corte": "2026-S32",
+    "antes_teste": {
+      "n": 72,
+      "p": 11,
+      "k": 12,
+      "MAE": 37.726,
+      "MedAE": 28.469,
+      "MSE": 2498.875,
+      "RMSE": 49.989,
+      "MAPE_pct": 35.83,
+      "R2": 0.7998,
+      "R2_ajustado": 0.7631,
+      "AIC": 587.3,
+      "AICc": 592.59,
+      "BIC": 614.62,
+      "SSR": 179918.99
+    },
+    "depois_teste": {
+      "n": 72,
+      "p": 11,
+      "k": 12,
+      "MAE": 36.139,
+      "MedAE": 26.554,
+      "MSE": 2416.211,
+      "RMSE": 49.155,
+      "MAPE_pct": 33.65,
+      "R2": 0.8064,
+      "R2_ajustado": 0.7709,
+      "AIC": 584.88,
+      "AICc": 590.16,
+      "BIC": 612.2,
+      "SSR": 173967.19
+    },
+    "tabela_projecao": "mes | 101-A | 102-A | 201-A | 202-A | 301-B | 302-B | 401-B | 402-B | TOTAL | R$ est.\n2026-11 | 525 | 1133 | 705 | 444 | 1336 | 0 | 415 | 756 | 5314 | 4743\n2026-12 | 561 | 1190 | 748 | 478 | 1399 | 0 | 448 | 799 | 5622 | 5017\n2027-01 | 576 | 1205 | 762 | 492 | 1414 | 0 | 463 | 814 | 5726 | 5110\n2027-02 | 536 | 1104 | 705 | 461 | 1293 | 6 | 434 | 751 | 5290 | 4721\n2027-03 | 612 | 1240 | 798 | 528 | 1450 | 24 | 498 | 850 | 6001 | 5356\n2027-04 | 610 | 1218 | 790 | 529 | 1421 | 42 | 500 | 841 | 5951 | 5311",
+    "recomendacoes": [
+      "ALERTA de expansao: o pico projetado e 6001 kWh/mes (media 5651). Com 4 carregadores (44 kW), recomendar assembleia para 5o ponto HCA G2.",
+      "Unidades sem veiculo cadastrado no horizonte (302-B): projecao proxima de zero. Nao ratear ocioso; vaga fica para os demais ate novo cadastro.",
+      "Maior carga projetada no ultimo mes: 301-B com 1421 kWh. Orientar recarga apos 22h (fora ponta) e, se houver 2+ carros, escalonar sessoes para nao coincidir na ponta 18-21h.",
+      "Custo estimado do semestre projetado (energia + 5% admin, tarifa base): R$ 30258.97. Levar o quadro mes a mes para a proxima assembleia."
+    ]
   }
 }

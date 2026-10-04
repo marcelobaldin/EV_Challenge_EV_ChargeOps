@@ -124,7 +124,11 @@ Sem a chave, tenta Gemini (`GEMINI_API_KEY`) e, por último, o fallback local po
 
 ```
 README.md                          ← este arquivo
-link_repositorio.txt               ← entregável oficial FIAP ON
+link_repositorio.txt               ← entregável oficial FIAP ON (.TXT)
+relatorio_ev_chargeops_v6.pdf      ← relatório técnico da Sprint 02
+apresentacao_ev_chargeops_v6.pptx  ← slides do pitch
+relatorio_tecnico_sprint02.md      ← mesma narrativa em Markdown
+instalacao_ev_chargeops.md         ← guia de instalação
 roteiro_video.md                   ← pitch presencial de 3 minutos
 sprint01_pesquisa_documentacao.md  ← base da Sprint 01 (reaproveitada)
 prototipo/
@@ -132,6 +136,7 @@ prototipo/
   app_ev_chargeops.py              ← Flask na porta 5050
   gerar_consumo_6meses.py          ← série de 6 meses + frota (semente 42)
   motor_regressao.py               ← OLS vs Ridge/Lasso/ElasticNet + projeção
+  gerar_entregaveis_sprint02.py    ← PDF, PPTX, gráficos e relatório MD
   gerar_evidencias.py
   requirements.txt
   templates/login.html
@@ -147,10 +152,16 @@ evidencias/
   saida_prototipo.json
   rateio_unidades.csv
   rateio_por_unidade.png
+  consumo_mensal_6meses.png
+  consumo_por_unidade.png
+  distribuicao_horario.png
+  kpis_regressao.png
+  projecao_6meses.png
   tela_login.png
   tela_sindico_dashboard.png
   tela_sindico_ranking.png
   tela_sindico_ia.png
+  tela_sindico_regressao.png
   tela_sindico_virtual.png
   tela_admin_rateio.png
   tela_admin_faturas.png

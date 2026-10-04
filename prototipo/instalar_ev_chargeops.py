@@ -57,7 +57,8 @@ def main():
 
     # 2. Instalar dependencias
     print("\n[2/3] Instalando dependencias...")
-    deps = ['flask', 'matplotlib', 'fpdf2', 'python-pptx', 'google-genai']
+    deps = ['flask', 'matplotlib', 'numpy', 'scikit-learn', 'openai',
+            'fpdf2', 'python-pptx', 'google-genai']
     subprocess.run([pip_path, 'install', '--quiet'] + deps,
                    check=True, capture_output=True)
     print(f"  {len(deps)} pacotes instalados: {', '.join(deps)}")
@@ -87,8 +88,8 @@ def main():
     print()
     print("  Para encerrar: Ctrl+C")
     print()
-    print("  Sindico Virtual com IA (opcional):")
-    print("  export GEMINI_API_KEY='sua-chave' (aistudio.google.com/apikey)")
+    print("  Sindico Virtual (opcional): crie prototipo/.env com OPENAI_API_KEY=...")
+    print("  Sem chave: tenta GEMINI_API_KEY e, por ultimo, regras locais.")
     print("=" * 60)
     print()
 
