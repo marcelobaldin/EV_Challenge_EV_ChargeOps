@@ -1,0 +1,236 @@
+{
+  "condominio": "Condominio Residencial Parque Verde",
+  "carregadores": 4,
+  "unidades": 8,
+  "sessoes_finalizadas": 177,
+  "mes_referencia": "2026-10",
+  "rateio": {
+    "mes_referencia": "2026-10",
+    "total_condominio_reais": 671.63,
+    "rateio_por_unidade": {
+      "101": {
+        "bloco": "A",
+        "proprietario": "Ana Silva",
+        "sessoes": 3,
+        "kwh": 119.66,
+        "energia_reais": 101.71,
+        "taxa_admin": 5.09,
+        "custo": 106.8
+      },
+      "102": {
+        "bloco": "A",
+        "proprietario": "Bruno Costa",
+        "sessoes": 1,
+        "kwh": 31.11,
+        "energia_reais": 26.44,
+        "taxa_admin": 1.32,
+        "custo": 27.76
+      },
+      "201": {
+        "bloco": "A",
+        "proprietario": "Carla Mendes",
+        "sessoes": 1,
+        "kwh": 4.45,
+        "energia_reais": 3.78,
+        "taxa_admin": 0.19,
+        "custo": 3.97
+      },
+      "202": {
+        "bloco": "A",
+        "proprietario": "Daniel Oliveira",
+        "sessoes": 2,
+        "kwh": 61.11,
+        "energia_reais": 65.76,
+        "taxa_admin": 3.29,
+        "custo": 69.05
+      },
+      "301": {
+        "bloco": "B",
+        "proprietario": "Elena Souza",
+        "sessoes": 4,
+        "kwh": 185.73,
+        "energia_reais": 157.87,
+        "taxa_admin": 7.89,
+        "custo": 165.76
+      },
+      "302": {
+        "bloco": "B",
+        "proprietario": "Felipe Santos",
+        "sessoes": 3,
+        "kwh": 105.93,
+        "energia_reais": 90.04,
+        "taxa_admin": 4.5,
+        "custo": 94.54
+      },
+      "401": {
+        "bloco": "B",
+        "proprietario": "Gabriela Lima",
+        "sessoes": 4,
+        "kwh": 148.27,
+        "energia_reais": 145.82,
+        "taxa_admin": 7.29,
+        "custo": 153.11
+      },
+      "402": {
+        "bloco": "B",
+        "proprietario": "Henrique Rocha",
+        "sessoes": 1,
+        "kwh": 47.28,
+        "energia_reais": 48.23,
+        "taxa_admin": 2.41,
+        "custo": 50.64
+      }
+    }
+  },
+  "faturas": [
+    {
+      "unidade": "101-A",
+      "proprietario": "Ana Silva",
+      "sessoes": 3,
+      "kwh": 119.66,
+      "reais": 106.8,
+      "status": "fechada"
+    },
+    {
+      "unidade": "102-A",
+      "proprietario": "Bruno Costa",
+      "sessoes": 1,
+      "kwh": 31.11,
+      "reais": 27.76,
+      "status": "fechada"
+    },
+    {
+      "unidade": "201-A",
+      "proprietario": "Carla Mendes",
+      "sessoes": 1,
+      "kwh": 4.45,
+      "reais": 3.97,
+      "status": "fechada"
+    },
+    {
+      "unidade": "202-A",
+      "proprietario": "Daniel Oliveira",
+      "sessoes": 2,
+      "kwh": 61.11,
+      "reais": 69.05,
+      "status": "fechada"
+    },
+    {
+      "unidade": "301-B",
+      "proprietario": "Elena Souza",
+      "sessoes": 4,
+      "kwh": 185.73,
+      "reais": 165.76,
+      "status": "fechada"
+    },
+    {
+      "unidade": "302-B",
+      "proprietario": "Felipe Santos",
+      "sessoes": 3,
+      "kwh": 105.93,
+      "reais": 94.54,
+      "status": "fechada"
+    },
+    {
+      "unidade": "401-B",
+      "proprietario": "Gabriela Lima",
+      "sessoes": 4,
+      "kwh": 148.27,
+      "reais": 153.11,
+      "status": "fechada"
+    },
+    {
+      "unidade": "402-B",
+      "proprietario": "Henrique Rocha",
+      "sessoes": 1,
+      "kwh": 47.28,
+      "reais": 50.64,
+      "status": "fechada"
+    }
+  ],
+  "ia_interpretacao_amostra": [
+    {
+      "sessao_id": "3b7ee728",
+      "duracao_horas": 1.06,
+      "eficiencia_pct": 87.3,
+      "classificacao": "normal",
+      "alertas": [],
+      "interpretacao": "Sessao 3b7ee728: 10.2 kWh em 1.1h (normal)"
+    },
+    {
+      "sessao_id": "922463c3",
+      "duracao_horas": 1.02,
+      "eficiencia_pct": 72.0,
+      "classificacao": "normal",
+      "alertas": [],
+      "interpretacao": "Sessao 922463c3: 16.1 kWh em 1.0h (normal)"
+    },
+    {
+      "sessao_id": "820d5932",
+      "duracao_horas": 4.36,
+      "eficiencia_pct": 77.6,
+      "classificacao": "normal",
+      "alertas": [],
+      "interpretacao": "Sessao 820d5932: 37.2 kWh em 4.4h (normal)"
+    },
+    {
+      "sessao_id": "e08f62e3",
+      "duracao_horas": 4.93,
+      "eficiencia_pct": 86.0,
+      "classificacao": "normal",
+      "alertas": [],
+      "interpretacao": "Sessao e08f62e3: 46.6 kWh em 4.9h (normal)"
+    },
+    {
+      "sessao_id": "b177343e",
+      "duracao_horas": 5.76,
+      "eficiencia_pct": 75.1,
+      "classificacao": "normal",
+      "alertas": [],
+      "interpretacao": "Sessao b177343e: 47.6 kWh em 5.8h (normal)"
+    },
+    {
+      "sessao_id": "1c1257e3",
+      "duracao_horas": 2.39,
+      "eficiencia_pct": 72.9,
+      "classificacao": "normal",
+      "alertas": [],
+      "interpretacao": "Sessao 1c1257e3: 12.2 kWh em 2.4h (normal)"
+    },
+    {
+      "sessao_id": "950fb564",
+      "duracao_horas": 5.85,
+      "eficiencia_pct": 76.4,
+      "classificacao": "normal",
+      "alertas": [
+        "Consumo elevado (>60 kWh) - veiculo com bateria grande ou recarga completa"
+      ],
+      "interpretacao": "Sessao 950fb564: 98.3 kWh em 5.9h (normal)"
+    },
+    {
+      "sessao_id": "ae0302fa",
+      "duracao_horas": 4.38,
+      "eficiencia_pct": 66.4,
+      "classificacao": "baixa_eficiencia",
+      "alertas": [
+        "Eficiencia de 66% - verificar conexao do cabo"
+      ],
+      "interpretacao": "Sessao ae0302fa: 31.9 kWh em 4.4h (baixa_eficiencia)"
+    }
+  ],
+  "ia_previsao": {
+    "consumo_medio_diario_kwh": 199.9,
+    "tendencia_pct": 39.4,
+    "direcao_tendencia": "crescente",
+    "previsao_mensal_kwh": 5997.6,
+    "pico_estimado_kwh_dia": 453.0,
+    "media_sessoes_dia": 5.9,
+    "necessita_expansao": true,
+    "recomendacao": "ALERTA: Considerar instalacao de carregador adicional. Pico estimado excede capacidade otima."
+  },
+  "sindico_virtual": {
+    "Quanto o condominio gastou em kWh?": "No periodo analisado, o condominio consumiu 5997.6 kWh no total, gerando um custo de R$ 5325.71. 8 unidades utilizaram os carregadores. O consumo medio por unidade foi de 749.7 kWh.",
+    "Como esta o rateio e as faturas?": "Existem 8 faturas abertas no valor total de R$ 671.63. O rateio e calculado automaticamente com base no consumo individual de cada unidade (kWh). A tarifa segue a precificacao dinamica da ANEEL: fora ponta (tarifa base), intermediaria (+20%) e ponta (+50%).",
+    "Precisamos de mais carregadores?": "Neste momento, 4 de 4 carregadores estao disponiveis. Todos os carregadores estao livres para uso."
+  }
+}

@@ -962,6 +962,8 @@ class GerenciadorSessoes:
 class MotorFaturamento:
     """Processamento de consumo individual para cobranca automatica."""
 
+    TAXA_ADMIN = 0.05  # Sprint 01: Custo = SUM(kWh * tarifa) + 5%
+
     def __init__(self):
         self.faturas: list = []
 
@@ -974,7 +976,8 @@ class MotorFaturamento:
                           and s.inicio and s.inicio.strftime("%Y-%m") == mes_ref]
 
         total_kwh = sum(s.energia_kwh for s in sessoes_unidade)
-        total_reais = sum(s.custo_total for s in sessoes_unidade)
+        energia_reais = sum(s.custo_total for s in sessoes_unidade)
+        total_reais = round(energia_reais * (1 + self.TAXA_ADMIN), 2)
 
         hoje = datetime.now()
         fatura = Fatura(
@@ -1004,7 +1007,9 @@ class MotorFaturamento:
                         and s.status == "finalizada"
                         and s.inicio and s.inicio.strftime("%Y-%m") == mes_ref]
             kwh = sum(s.energia_kwh for s in sessoes_u)
-            custo = sum(s.custo_total for s in sessoes_u)
+            energia = sum(s.custo_total for s in sessoes_u)
+            admin = round(energia * self.TAXA_ADMIN, 2)
+            custo = round(energia + admin, 2)
             num = len(sessoes_u)
 
             rateio[u.numero] = {
@@ -1012,7 +1017,9 @@ class MotorFaturamento:
                 "proprietario": u.proprietario,
                 "sessoes": num,
                 "kwh": round(kwh, 2),
-                "custo": round(custo, 2)
+                "energia_reais": round(energia, 2),
+                "taxa_admin": admin,
+                "custo": custo
             }
             total_cond += custo
 
