@@ -31,7 +31,7 @@ print("=" * 60)
 
 plataforma = EVChargeOps()
 plataforma.setup_demo()
-plataforma.gerar_historico_simulado(dias=30)
+plataforma.carregar_ou_gerar_historico()
 
 print("  Plataforma pronta.\n")
 

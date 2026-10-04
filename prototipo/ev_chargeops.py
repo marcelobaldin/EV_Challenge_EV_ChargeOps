@@ -696,25 +696,24 @@ class MotorIA:
     # ---- CONVERSACAO (SINDICO VIRTUAL) ----
 
     SISTEMA_SINDICO = (
-        "Voce e o Sindico Virtual do EV ChargeOps, plataforma de gestao de recarga "
-        "compartilhada de veiculos eletricos em condominios (GoodWe HCA G2 + FIAP). "
-        "Responda em portugues do Brasil, de forma clara e objetiva. Use APENAS os "
-        "dados operacionais fornecidos: cite kWh, R$ e unidades. Se o dado nao "
-        "Nao invente unidades, kWh ou valores. O campo 'Rateio do mes' e o TOTAL do "
-        "condominio naquele mes, NAO o valor de cada apartamento. Cada unidade paga "
-        "somente a linha correspondente no ranking (kWh x tarifa da sessao + 5%). "
-        "praticas (horario fora ponta, assembleia, expansao de carregador). "
-        "Rateio: Custo_Unidade = soma(kWh_sessao x tarifa_sessao) + 5% taxa admin. "
+        "Voce e o Sindico Virtual do EV ChargeOps (GoodWe HCA G2 + FIAP). "
+        "Responda em portugues do Brasil, objetivo, com numeros. Use APENAS o "
+        "contexto: ha uma serie de 6 meses (abr/2026 a out/2026) por unidade, "
+        "tabela mensal e os ultimos 14 dias. Nao invente kWh nem R$. "
+        "O ranking do SEMESTRE e a soma de todo o periodo. O rateio do MES "
+        "CORRENTE e so daquele mes; cada apto paga a propria linha, nao o total. "
+        "Rateio: Custo = soma(kWh_sessao x tarifa_sessao) + 5% taxa admin. "
         "Tarifa ANEEL: fora ponta = base; intermediaria (17-18h e 21-22h) = +20%; "
-        "ponta (18-21h em dia util) = +50%; fim de semana = fora ponta o dia todo."
+        "ponta (18-21h dia util) = +50%; fim de semana = fora ponta o dia todo. "
+        "Sugira acoes (horario fora ponta, assembleia, expansao de carregador)."
     )
 
     @staticmethod
     def _montar_contexto(dados_condominio: dict) -> str:
-        """Monta o contexto RAG com os dados reais do condominio."""
+        """Monta o contexto RAG com a serie de 6 meses e o mes corrente."""
         ranking = dados_condominio.get("ranking_unidades") or []
         linhas_rank = []
-        for item in ranking[:8]:
+        for item in ranking:
             linhas_rank.append(
                 f"  - {item.get('unidade')}: {item.get('proprietario')}, "
                 f"{item.get('sessoes', 0)} sessoes, {item.get('kwh', 0)} kWh, "
@@ -726,23 +725,43 @@ class MotorIA:
         bloco_anom = "\n".join(f"  - {a}" for a in anomalias[:6]) or "  (nenhuma)"
 
         rateio = dados_condominio.get("rateio_mes") or {}
+        rpu = rateio.get("rateio_por_unidade") or {}
+        linhas_rateio = []
+        if isinstance(rpu, dict):
+            for num, row in rpu.items():
+                linhas_rateio.append(
+                    f"  - {num}-{row.get('bloco', '')}: {row.get('proprietario', '')}, "
+                    f"{row.get('sessoes', 0)} sessoes, {row.get('kwh', 0)} kWh, "
+                    f"energia R$ {row.get('energia_reais', 0)}, "
+                    f"admin R$ {row.get('taxa_admin', 0)}, "
+                    f"total R$ {row.get('custo', 0)}"
+                )
+        bloco_rateio = "\n".join(linhas_rateio) if linhas_rateio else "  (sem rateio do mes)"
+
+        tabela_mes = dados_condominio.get("tabela_mensal") or "  (sem serie mensal)"
+        tabela_dia = dados_condominio.get("tabela_diaria_recente") or "  (sem serie diaria)"
+        periodo = dados_condominio.get("periodo_historico", "N/D")
+
         return (
             "DADOS OPERACIONAIS DO CONDOMINIO\n"
             f"- Nome: {dados_condominio.get('condominio', 'N/D')}\n"
-            f"- Mes de referencia: {dados_condominio.get('mes_referencia', 'N/D')}\n"
-            f"- Consumo total (30 dias): {dados_condominio.get('consumo_total_kwh', 0)} kWh\n"
-            f"- Custo total (30 dias): R$ {dados_condominio.get('custo_total', 0)}\n"
-            f"- Unidades ativas: {dados_condominio.get('num_unidades_ativas', 0)}\n"
+            f"- Periodo da serie: {periodo}\n"
+            f"- Consumo TOTAL do periodo: {dados_condominio.get('consumo_total_kwh', 0)} kWh\n"
+            f"- Custo TOTAL do periodo: R$ {dados_condominio.get('custo_total', 0)}\n"
+            f"- Sessoes no periodo: {dados_condominio.get('sessoes_periodo', 0)}\n"
+            f"- Unidades: {dados_condominio.get('num_unidades_ativas', 0)}\n"
             f"- Carregadores livres: {dados_condominio.get('carregadores_disponiveis', 0)}"
             f"/{dados_condominio.get('total_carregadores', 0)}\n"
-            f"- Faturas do mes: {dados_condominio.get('faturas_abertas', 0)} "
-            f"(R$ {dados_condominio.get('total_pendente', 0)} pendente)\n"
             f"- Tendencia: {dados_condominio.get('tendencia', 'estavel')}\n"
-            f"- Previsao 30 dias: {dados_condominio.get('previsao_mensal_kwh', 0)} kWh\n"
-            f"- Rateio TOTAL do mes corrente (energia + 5% admin, soma das unidades): R$ "
-            f"{rateio.get('total_condominio_reais', dados_condominio.get('total_pendente', 0))}\n"
-            f"CONSUMO INDIVIDUAL (30 dias — quem recarrega mais, paga mais):\n{bloco_rank}\n"
-            f"ANOMALIAS:\n{bloco_anom}\n"
+            f"- Previsao proximos 30 dias: {dados_condominio.get('previsao_mensal_kwh', 0)} kWh\n"
+            f"- Mes corrente (rateio): {dados_condominio.get('mes_referencia', 'N/D')}\n"
+            f"- Rateio TOTAL do mes corrente (soma das unidades, energia+5%): R$ "
+            f"{rateio.get('total_condominio_reais', 0)}\n"
+            f"\nCONSUMO MENSAL POR UNIDADE (kWh) — serie de 6 meses:\n{tabela_mes}\n"
+            f"\nULTIMOS 14 DIAS (kWh por unidade, 0 = nao recarregou):\n{tabela_dia}\n"
+            f"\nRANKING DO PERIODO (6 meses — quem recarrega mais, paga mais):\n{bloco_rank}\n"
+            f"\nRATEIO DO MES CORRENTE (nao confundir com o semestre):\n{bloco_rateio}\n"
+            f"\nANOMALIAS RECENTES:\n{bloco_anom}\n"
         )
 
     @staticmethod
@@ -765,7 +784,7 @@ class MotorIA:
         payload = {
             "model": modelo,
             "temperature": 0.3,
-            "max_tokens": 700,
+            "max_tokens": 1100,
             "messages": [
                 {"role": "system", "content": MotorIA.SISTEMA_SINDICO},
                 {
@@ -1253,6 +1272,133 @@ class EVChargeOps:
 
         print(f"  {sessoes_geradas} sessoes historicas geradas ({dias} dias)")
 
+    def carregar_historico_sessoes(self, caminho: str) -> int:
+        """Carrega sessoes a partir do CSV de 6 meses (dados/consumo_sessoes_6meses.csv)."""
+        import csv
+        from pathlib import Path
+
+        path = Path(caminho)
+        if not path.is_file():
+            raise FileNotFoundError(path)
+
+        por_unidade = {(u.numero, u.bloco): u for u in self.unidades}
+        por_modelo = defaultdict(list)
+        for c in self.carregadores:
+            por_modelo[c.modelo].append(c)
+
+        carregadas = 0
+        with path.open(newline="", encoding="utf-8") as fh:
+            for row in csv.DictReader(fh):
+                unidade = por_unidade.get((row["unidade"], row["bloco"]))
+                if unidade is None:
+                    continue
+                candidatos = por_modelo.get(row.get("carregador_modelo", ""), self.carregadores)
+                carregador = candidatos[hash(unidade.id) % len(candidatos)]
+                inicio = datetime.fromisoformat(row["inicio_iso"])
+                duracao_h = float(row.get("duracao_h") or 1)
+                energia = float(row["kwh"])
+                tarifa = float(row["tarifa"])
+                sessao = SessaoRecarga(
+                    unidade_id=unidade.id,
+                    carregador_id=carregador.id,
+                    inicio=inicio,
+                    fim=inicio + timedelta(hours=duracao_h),
+                    energia_kwh=energia,
+                    custo_total=float(row["custo"]),
+                    tarifa_aplicada=tarifa,
+                    status="finalizada",
+                    tipo_tarifa=row.get("tipo_tarifa", "fora_ponta"),
+                    potencia_media_kw=float(row.get("potencia_kw") or carregador.potencia_kw),
+                )
+                self.gerenciador.sessoes.append(sessao)
+                carregador.energia_acumulada_kwh += energia
+                carregadas += 1
+
+        print(f"  {carregadas} sessoes carregadas de {path.name}")
+        return carregadas
+
+    def carregar_ou_gerar_historico(self, dias_fallback: int = 180) -> None:
+        """Prefere o CSV de 6 meses; se nao existir, simula."""
+        caminho = (Path(__file__).resolve().parent.parent
+                   / "dados" / "consumo_sessoes_6meses.csv")
+        if caminho.is_file():
+            self.carregar_historico_sessoes(str(caminho))
+        else:
+            self.gerar_historico_simulado(dias=dias_fallback)
+
+    def montar_serie_historica(self, dias_recentes: int = 14) -> dict:
+        """Empacota a serie de 6 meses (CSV diario/mensal + sessoes em memoria) para o GPT."""
+        import csv
+
+        rotulos = [f"{u.numero}-{u.bloco}" for u in self.unidades]
+        pasta = Path(__file__).resolve().parent.parent / "dados"
+        path_dia = pasta / "consumo_diario_6meses.csv"
+        path_mes = pasta / "consumo_mensal_6meses.csv"
+
+        mensal = defaultdict(lambda: {r: 0.0 for r in rotulos})
+        mensal_custo = defaultdict(lambda: {r: 0.0 for r in rotulos})
+        diario = defaultdict(lambda: {r: 0.0 for r in rotulos})
+        datas = []
+
+        if path_mes.is_file():
+            with path_mes.open(newline="", encoding="utf-8") as fh:
+                for row in csv.DictReader(fh):
+                    rotulo = f"{row['unidade']}-{row['bloco']}"
+                    mensal[row["mes"]][rotulo] = float(row["kwh"])
+                    mensal_custo[row["mes"]][rotulo] = float(row["custo"])
+
+        if path_dia.is_file():
+            with path_dia.open(newline="", encoding="utf-8") as fh:
+                for row in csv.DictReader(fh):
+                    rotulo = f"{row['unidade']}-{row['bloco']}"
+                    diario[row["data"]][rotulo] = float(row["kwh"])
+                    datas.append(row["data"])
+
+        if not datas:
+            for s in self.gerenciador.sessoes:
+                if s.status != "finalizada" or not s.inicio:
+                    continue
+                rotulo = next(
+                    (f"{u.numero}-{u.bloco}" for u in self.unidades if u.id == s.unidade_id),
+                    s.unidade_id,
+                )
+                mes = s.inicio.strftime("%Y-%m")
+                dia = s.inicio.strftime("%Y-%m-%d")
+                mensal[mes][rotulo] += s.energia_kwh
+                diario[dia][rotulo] += s.energia_kwh
+                datas.append(dia)
+
+        datas = sorted(set(datas))
+        meses = sorted(mensal.keys())
+        periodo = f"{datas[0]} a {datas[-1]}" if datas else "sem dados"
+
+        def fmt(valor: float) -> str:
+            return f"{valor:.0f}" if valor else "0"
+
+        linhas_mes = ["mes | " + " | ".join(rotulos) + " | TOTAL"]
+        for mes in meses:
+            vals = [mensal[mes].get(r, 0.0) for r in rotulos]
+            linhas_mes.append(
+                mes + " | " + " | ".join(fmt(v) for v in vals) + f" | {fmt(sum(vals))}"
+            )
+        tabela_mensal = "\n".join(linhas_mes)
+
+        recentes = datas[-dias_recentes:] if datas else []
+        linhas_dia = ["data | " + " | ".join(rotulos) + " | TOTAL"]
+        for dia in recentes:
+            vals = [diario[dia].get(r, 0.0) for r in rotulos]
+            linhas_dia.append(
+                dia + " | " + " | ".join(fmt(v) for v in vals) + f" | {fmt(sum(vals))}"
+            )
+        tabela_diaria = "\n".join(linhas_dia)
+
+        return {
+            "periodo": periodo,
+            "tabela_mensal": tabela_mensal,
+            "tabela_diaria_recente": tabela_diaria,
+            "n_dias": len(datas),
+        }
+
     # ---- CONSULTAS E RELATORIOS ----
 
     def status_carregadores(self) -> list:
@@ -1343,10 +1489,13 @@ class EVChargeOps:
             })
         ranking.sort(key=lambda x: x["kwh"], reverse=True)
         rateio = self.faturamento.relatorio_rateio(self.unidades, sessoes_fin, mes)
+        serie = self.montar_serie_historica(dias_recentes=14)
 
         dados_sindico = {
             "condominio": dashboard.get("condominio", getattr(self.condominio, "nome", "")),
             "mes_referencia": mes,
+            "periodo_historico": serie["periodo"],
+            "sessoes_periodo": len(sessoes_fin),
             "consumo_total_kwh": dashboard["total_kwh"],
             "custo_total": dashboard["total_custo"],
             "num_unidades_ativas": dashboard["unidades_ativas"],
@@ -1360,6 +1509,8 @@ class EVChargeOps:
             "anomalias": anomalias[:5],
             "ranking_unidades": ranking,
             "rateio_mes": rateio,
+            "tabela_mensal": serie["tabela_mensal"],
+            "tabela_diaria_recente": serie["tabela_diaria_recente"],
         }
 
         return {

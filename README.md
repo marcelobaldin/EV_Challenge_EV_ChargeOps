@@ -66,7 +66,12 @@ Abrir http://localhost:5050
 | `sindico` | `senha` | Painel operacional + Síndico Virtual |
 | `administrador` | `senha` | Faturas, rateio e exportação CSV |
 
-O servidor sobe com um condomínio demo (8 unidades, 4 carregadores) e ~180 sessões dos últimos 30 dias.
+O servidor sobe com o condomínio demo (8 unidades, 4 carregadores) e carrega `dados/consumo_sessoes_6meses.csv` (abr–set/2026 + 1–4/out, semente 42). Para regenerar a série:
+
+```bash
+cd prototipo
+python gerar_consumo_6meses.py
+```
 
 Para regenerar as evidências em lote (JSON, CSV e gráfico), sem abrir o navegador:
 
@@ -98,10 +103,15 @@ sprint01_pesquisa_documentacao.md  ← base da Sprint 01 (reaproveitada)
 prototipo/
   ev_chargeops.py                  ← núcleo (sessões, Modbus, IA, rateio)
   app_ev_chargeops.py              ← Flask na porta 5050
+  gerar_consumo_6meses.py          ← gera a série de 6 meses (semente 42)
   gerar_evidencias.py
   requirements.txt
   templates/login.html
   templates/dashboard.html
+dados/
+  consumo_diario_6meses.csv        ← 8 aptos × todos os dias (kWh pode ser 0)
+  consumo_sessoes_6meses.csv       ← sessões que alimentam o Motor de IA
+  consumo_mensal_6meses.csv        ← agregado mensal por unidade
 evidencias/
   saida_prototipo.json
   rateio_unidades.csv

@@ -23,7 +23,7 @@ random.seed(42)
 print("Gerando evidencias EV ChargeOps...")
 plat = EVChargeOps()
 plat.setup_demo()
-plat.gerar_historico_simulado(dias=30)
+plat.carregar_ou_gerar_historico()
 
 sessoes = [s for s in plat.gerenciador.sessoes if s.status == "finalizada"]
 mes = datetime.now().strftime("%Y-%m")
