@@ -52,7 +52,29 @@ import sys
 from datetime import datetime, timedelta
 from collections import defaultdict
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
+
+
+def _carregar_dotenv() -> None:
+    """Carrega OPENAI_API_KEY de prototipo/.env sem sobrescrever o ambiente."""
+    for caminho in (
+        Path(__file__).resolve().parent / ".env",
+        Path(__file__).resolve().parent.parent / ".env",
+    ):
+        if not caminho.is_file():
+            continue
+        for linha in caminho.read_text(encoding="utf-8").splitlines():
+            linha = linha.strip()
+            if not linha or linha.startswith("#") or "=" not in linha:
+                continue
+            chave, _, valor = linha.partition("=")
+            chave, valor = chave.strip(), valor.strip().strip('"').strip("'")
+            if chave and chave not in os.environ:
+                os.environ[chave] = valor
+
+
+_carregar_dotenv()
 
 # ============================================================================
 # MAPA DE REGISTRADORES MODBUS - GoodWe HCA G2 (Ref: Mapa MODBUS_HCA G2.pdf)
@@ -673,6 +695,111 @@ class MotorIA:
 
     # ---- CONVERSACAO (SINDICO VIRTUAL) ----
 
+    SISTEMA_SINDICO = (
+        "Voce e o Sindico Virtual do EV ChargeOps, plataforma de gestao de recarga "
+        "compartilhada de veiculos eletricos em condominios (GoodWe HCA G2 + FIAP). "
+        "Responda em portugues do Brasil, de forma clara e objetiva. Use APENAS os "
+        "dados operacionais fornecidos: cite kWh, R$ e unidades. Se o dado nao "
+        "Nao invente unidades, kWh ou valores. O campo 'Rateio do mes' e o TOTAL do "
+        "condominio naquele mes, NAO o valor de cada apartamento. Cada unidade paga "
+        "somente a linha correspondente no ranking (kWh x tarifa da sessao + 5%). "
+        "praticas (horario fora ponta, assembleia, expansao de carregador). "
+        "Rateio: Custo_Unidade = soma(kWh_sessao x tarifa_sessao) + 5% taxa admin. "
+        "Tarifa ANEEL: fora ponta = base; intermediaria (17-18h e 21-22h) = +20%; "
+        "ponta (18-21h em dia util) = +50%; fim de semana = fora ponta o dia todo."
+    )
+
+    @staticmethod
+    def _montar_contexto(dados_condominio: dict) -> str:
+        """Monta o contexto RAG com os dados reais do condominio."""
+        ranking = dados_condominio.get("ranking_unidades") or []
+        linhas_rank = []
+        for item in ranking[:8]:
+            linhas_rank.append(
+                f"  - {item.get('unidade')}: {item.get('proprietario')}, "
+                f"{item.get('sessoes', 0)} sessoes, {item.get('kwh', 0)} kWh, "
+                f"R$ {item.get('custo', 0)}"
+            )
+        bloco_rank = "\n".join(linhas_rank) if linhas_rank else "  (sem ranking)"
+
+        anomalias = dados_condominio.get("anomalias") or []
+        bloco_anom = "\n".join(f"  - {a}" for a in anomalias[:6]) or "  (nenhuma)"
+
+        rateio = dados_condominio.get("rateio_mes") or {}
+        return (
+            "DADOS OPERACIONAIS DO CONDOMINIO\n"
+            f"- Nome: {dados_condominio.get('condominio', 'N/D')}\n"
+            f"- Mes de referencia: {dados_condominio.get('mes_referencia', 'N/D')}\n"
+            f"- Consumo total (30 dias): {dados_condominio.get('consumo_total_kwh', 0)} kWh\n"
+            f"- Custo total (30 dias): R$ {dados_condominio.get('custo_total', 0)}\n"
+            f"- Unidades ativas: {dados_condominio.get('num_unidades_ativas', 0)}\n"
+            f"- Carregadores livres: {dados_condominio.get('carregadores_disponiveis', 0)}"
+            f"/{dados_condominio.get('total_carregadores', 0)}\n"
+            f"- Faturas do mes: {dados_condominio.get('faturas_abertas', 0)} "
+            f"(R$ {dados_condominio.get('total_pendente', 0)} pendente)\n"
+            f"- Tendencia: {dados_condominio.get('tendencia', 'estavel')}\n"
+            f"- Previsao 30 dias: {dados_condominio.get('previsao_mensal_kwh', 0)} kWh\n"
+            f"- Rateio TOTAL do mes corrente (energia + 5% admin, soma das unidades): R$ "
+            f"{rateio.get('total_condominio_reais', dados_condominio.get('total_pendente', 0))}\n"
+            f"CONSUMO INDIVIDUAL (30 dias — quem recarrega mais, paga mais):\n{bloco_rank}\n"
+            f"ANOMALIAS:\n{bloco_anom}\n"
+        )
+
+    @staticmethod
+    def _openai_disponivel() -> bool:
+        return bool(os.environ.get("OPENAI_API_KEY"))
+
+    @staticmethod
+    def _chamar_openai(pergunta: str, dados_condominio: dict) -> str:
+        """Chama a API Chat Completions da OpenAI (HTTPS direto, sem SDK)."""
+        api_key = os.environ.get("OPENAI_API_KEY", "")
+        if not api_key:
+            return ""
+
+        import json
+        import urllib.error
+        import urllib.request
+
+        modelo = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+        contexto = MotorIA._montar_contexto(dados_condominio)
+        payload = {
+            "model": modelo,
+            "temperature": 0.3,
+            "max_tokens": 700,
+            "messages": [
+                {"role": "system", "content": MotorIA.SISTEMA_SINDICO},
+                {
+                    "role": "user",
+                    "content": contexto + f"\nPERGUNTA DO SINDICO:\n{pergunta}",
+                },
+            ],
+        }
+        req = urllib.request.Request(
+            "https://api.openai.com/v1/chat/completions",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=45) as resp:
+                corpo = json.loads(resp.read().decode("utf-8"))
+            texto = (
+                corpo.get("choices", [{}])[0]
+                .get("message", {})
+                .get("content", "")
+            )
+            return (texto or "").strip()
+        except urllib.error.HTTPError as e:
+            detalhe = e.read().decode("utf-8", errors="ignore")[:300]
+            print(f"  [OpenAI] HTTP {e.code}: {detalhe}")
+            return ""
+        except Exception as e:
+            print(f"  [OpenAI] Erro: {e}")
+            return ""
+
     @staticmethod
     def _gemini_disponivel() -> bool:
         """Verifica se a API do Google Gemini esta configurada."""
@@ -680,7 +807,7 @@ class MotorIA:
 
     @staticmethod
     def _chamar_gemini(pergunta: str, dados_condominio: dict) -> str:
-        """Chama o Google Gemini 2.0 Flash com contexto do condominio via RAG."""
+        """Fallback Gemini, se OPENAI_API_KEY nao estiver disponivel."""
         try:
             from google import genai
             from google.genai import types
@@ -693,44 +820,13 @@ class MotorIA:
 
         try:
             client = genai.Client(api_key=api_key)
-
-            contexto = (
-                "Voce e o Sindico Virtual do EV ChargeOps, uma plataforma de gestao "
-                "de recarga de veiculos eletricos em condominios. Responda de forma "
-                "clara, objetiva e em portugues do Brasil. Use os dados reais abaixo "
-                "para embasar suas respostas. Sugira acoes praticas quando possivel.\n\n"
-                "DADOS DO CONDOMINIO:\n"
-                f"- Consumo total: {dados_condominio.get('consumo_total_kwh', 0):.1f} kWh\n"
-                f"- Custo total: R$ {dados_condominio.get('custo_total', 0):.2f}\n"
-                f"- Unidades ativas: {dados_condominio.get('num_unidades_ativas', 0)}\n"
-                f"- Carregadores disponiveis: {dados_condominio.get('carregadores_disponiveis', 0)}"
-                f"/{dados_condominio.get('total_carregadores', 0)}\n"
-                f"- Faturas abertas: {dados_condominio.get('faturas_abertas', 0)}\n"
-                f"- Valor pendente: R$ {dados_condominio.get('total_pendente', 0):.2f}\n"
-                f"- Tendencia de consumo: {dados_condominio.get('tendencia', 'estavel')}\n"
-                f"- Previsao mensal: {dados_condominio.get('previsao_mensal_kwh', 0):.0f} kWh\n"
-            )
-
-            anomalias = dados_condominio.get("anomalias", [])
-            if anomalias:
-                contexto += "- Anomalias detectadas:\n"
-                for a in anomalias[:5]:
-                    contexto += f"  * {a}\n"
-
-            contexto += (
-                "\nREGRAS DE TARIFA (ANEEL):\n"
-                "- Fora ponta (22h-17h): tarifa base R$ 0,85/kWh\n"
-                "- Intermediaria (17h-18h e 21h-22h): +20%\n"
-                "- Ponta (18h-21h dias uteis): +50%\n"
-                "- Taxa administrativa: 5%\n"
-            )
-
+            contexto = MotorIA.SISTEMA_SINDICO + "\n\n" + MotorIA._montar_contexto(dados_condominio)
             resp = client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=contexto + f"\nPERGUNTA DO SINDICO: {pergunta}",
                 config=types.GenerateContentConfig(
                     max_output_tokens=1024,
-                    temperature=0.7,
+                    temperature=0.3,
                     thinking_config=types.ThinkingConfig(thinking_budget=0),
                 ),
             )
@@ -742,10 +838,13 @@ class MotorIA:
     @staticmethod
     def sindico_virtual(pergunta: str, dados_condominio: dict) -> str:
         """
-        Sindico Virtual - Agente conversacional com IA generativa.
-        Usa Google Gemini quando disponivel (GEMINI_API_KEY configurada),
-        com fallback para respostas locais baseadas em regras.
+        Sindico Virtual. Ordem: OpenAI (OPENAI_API_KEY) -> Gemini -> regras locais.
         """
+        if MotorIA._openai_disponivel():
+            resposta = MotorIA._chamar_openai(pergunta, dados_condominio)
+            if resposta:
+                return resposta
+
         if MotorIA._gemini_disponivel():
             resposta = MotorIA._chamar_gemini(pergunta, dados_condominio)
             if resposta:
@@ -1231,7 +1330,23 @@ class EVChargeOps:
 
         # Dados para Sindico Virtual
         dashboard = self.dashboard_condominio()
+        mes = datetime.now().strftime("%Y-%m")
+        ranking = []
+        for u in self.unidades:
+            s_u = [s for s in sessoes_fin if s.unidade_id == u.id]
+            ranking.append({
+                "unidade": f"{u.numero}-{u.bloco}",
+                "proprietario": u.proprietario,
+                "sessoes": len(s_u),
+                "kwh": round(sum(s.energia_kwh for s in s_u), 1),
+                "custo": round(sum(s.custo_total for s in s_u), 2),
+            })
+        ranking.sort(key=lambda x: x["kwh"], reverse=True)
+        rateio = self.faturamento.relatorio_rateio(self.unidades, sessoes_fin, mes)
+
         dados_sindico = {
+            "condominio": dashboard.get("condominio", getattr(self.condominio, "nome", "")),
+            "mes_referencia": mes,
             "consumo_total_kwh": dashboard["total_kwh"],
             "custo_total": dashboard["total_custo"],
             "num_unidades_ativas": dashboard["unidades_ativas"],
@@ -1242,7 +1357,9 @@ class EVChargeOps:
                                  if f.status != "paga"),
             "tendencia": previsao.get("direcao_tendencia", "estavel"),
             "previsao_mensal_kwh": previsao.get("previsao_mensal_kwh", 0),
-            "anomalias": anomalias[:5]
+            "anomalias": anomalias[:5],
+            "ranking_unidades": ranking,
+            "rateio_mes": rateio,
         }
 
         return {

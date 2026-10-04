@@ -2,3 +2,5 @@ venv_ev_chargeops/
 __pycache__/
 *.pyc
 .DS_Store
+.env
+*.env

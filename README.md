@@ -44,7 +44,7 @@ O Motor de IA não é um chat decorativo. Ele entra no fluxo:
 | Interpretação | Classifica sessão (normal / prolongada / baixa eficiência) e gera alertas |
 | Preditividade | Média diária, tendência e previsão de 30 dias; alerta de expansão |
 | Precificação | Calcula a tarifa de cada sessão no momento do encerramento |
-| Conversação | Síndico Virtual: Gemini se `GEMINI_API_KEY` existir; senão, RAG local por regras sobre os dados reais do condomínio |
+| Conversação | Síndico Virtual via **OpenAI** (`OPENAI_API_KEY`); Gemini e regras locais só como fallback |
 
 ---
 
@@ -77,7 +77,14 @@ python gerar_evidencias.py
 
 Saídas em `evidencias/`.
 
-Gemini é opcional. Sem a variável de ambiente, o Síndico Virtual responde com o fallback local — o módulo de IA continua estrutural.
+O Síndico Virtual usa a API da OpenAI (padrão: `gpt-4o-mini`). Crie `prototipo/.env` (não versionado) com:
+
+```
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o-mini
+```
+
+Sem a chave, tenta Gemini (`GEMINI_API_KEY`) e, por último, o fallback local por regras — o módulo de IA continua estrutural.
 
 ---
 
@@ -137,7 +144,7 @@ A Sprint 02 implementa o que foi planejado: Python, in-memory, tarifa dinâmica,
 | Tarifa com fator de demanda e bandeira | Ponta / intermediária / fora ponta | Os fatores 1,5 e 1,2 já diferenciam o kWh; bandeira e ocupação simultânea entram na evolução |
 | Roadmap: IA em mar/2027 e dashboard em jun/2027 | IA 4D + Flask já nesta sprint | O edital da Sprint 02 exige protótipo com lógica, IA estrutural e evidência; o dashboard foi antecipado |
 | Integração Superlógica / Condomob | Exportação CSV | Formato que a administradora já consome; API fica para v1.0 |
-| Gemini obrigatório | Gemini opcional + fallback local | O módulo funciona offline; a chave não pode ser requisito de correção |
+| Gemini obrigatório | OpenAI no Síndico Virtual; Gemini e regras locais como fallback | A chave fica em `prototipo/.env` (fora do Git); o restante da IA 4D continua local |
 
 O que **não** desviou: linguagem Python, autenticação RFID, tarifa alinhada à RN ANEEL 1.000/2021, fórmula `Σ(kWh × tarifa) + 5%`, Síndico Virtual com dados reais do condomínio, e o HCA G2 como hardware de referência.
 

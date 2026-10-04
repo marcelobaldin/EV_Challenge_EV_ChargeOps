@@ -94,7 +94,7 @@ Login rápido do administrador (`administrador` / `senha`) só se sobrar tempo: 
 >
 > Preditividade: média de duzentos kWh por dia, tendência crescente de 39%, previsão de cerca de seis mil kWh no mês. O sistema recomenda carregador extra.
 >
-> Conversação: o Síndico Virtual responde com os dados reais. Sem chave Gemini, o fallback local já consulta consumo, faturas e vagas. Com a chave, o mesmo contexto vai para o modelo."
+> Conversação: o Síndico Virtual agora vai para a OpenAI com o ranking, o rateio e as anomalias. Sem a chave, cai no Gemini ou no fallback local."
 
 **Ação:** perguntar “Como está o rateio e as faturas?” e ler a resposta em voz alta.
 
@@ -116,7 +116,7 @@ Parar. Não improvisar um sexto bloco.
 
 ## Se estourar 3 minutos — ordem de corte
 
-1. Tirar a frase do Gemini / fallback.
+1. Tirar a frase do fallback OpenAI/Gemini.
 2. Encurtar o bloco 2 (não listar as três camadas; dizer só “arquitetura da Sprint 01 em Python”).
 3. Não abrir o chat: somente a tela de Análise IA.
 4. Nunca cortar a fórmula do rateio nem o número do condomínio.
