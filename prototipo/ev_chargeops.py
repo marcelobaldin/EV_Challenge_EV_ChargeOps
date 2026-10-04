@@ -270,6 +270,11 @@ class SessaoRecarga:
     status: str = "ativa"  # ativa, finalizada, interrompida
     tipo_tarifa: str = "fora_ponta"  # ponta, intermediaria, fora_ponta
     potencia_media_kw: float = 0.0
+    placa: str = ""
+    veiculo_marca: str = ""
+    veiculo_modelo: str = ""
+    bateria_kwh: float = 0.0
+    autonomia_km: float = 0.0
 
 
 @dataclass
@@ -699,7 +704,10 @@ class MotorIA:
         "Voce e o Sindico Virtual do EV ChargeOps (GoodWe HCA G2 + FIAP). "
         "Responda em portugues do Brasil, objetivo, com numeros. Use APENAS o "
         "contexto: ha uma serie de 6 meses (abr/2026 a out/2026) por unidade, "
-        "tabela mensal e os ultimos 14 dias. Nao invente kWh nem R$. "
+        "tabela mensal, os ultimos 14 dias e a frota (marca, modelo, bateria, "
+        "autonomia, placa). Cada apto pode ter 0 a 3 carros; ha compra e venda "
+        "no periodo. Sem carro cadastrado naquele dia, nao ha sessao. "
+        "Nao invente kWh, R$, placa nem modelo. "
         "O ranking do SEMESTRE e a soma de todo o periodo. O rateio do MES "
         "CORRENTE e so daquele mes; cada apto paga a propria linha, nao o total. "
         "Rateio: Custo = soma(kWh_sessao x tarifa_sessao) + 5% taxa admin. "
@@ -741,6 +749,9 @@ class MotorIA:
         tabela_mes = dados_condominio.get("tabela_mensal") or "  (sem serie mensal)"
         tabela_dia = dados_condominio.get("tabela_diaria_recente") or "  (sem serie diaria)"
         periodo = dados_condominio.get("periodo_historico", "N/D")
+        frota_ativa = dados_condominio.get("frota_ativa") or "  (sem frota)"
+        frota_eventos = dados_condominio.get("frota_eventos") or "  (sem eventos)"
+        consumo_placa = dados_condominio.get("consumo_por_veiculo") or "  (sem consumo por placa)"
 
         return (
             "DADOS OPERACIONAIS DO CONDOMINIO\n"
@@ -759,6 +770,9 @@ class MotorIA:
             f"{rateio.get('total_condominio_reais', 0)}\n"
             f"\nCONSUMO MENSAL POR UNIDADE (kWh) — serie de 6 meses:\n{tabela_mes}\n"
             f"\nULTIMOS 14 DIAS (kWh por unidade, 0 = nao recarregou):\n{tabela_dia}\n"
+            f"\nFROTA ATIVA NO FIM DO PERIODO (0 a 3 carros por apto):\n{frota_ativa}\n"
+            f"\nCOMPRA E VENDA NO PERIODO:\n{frota_eventos}\n"
+            f"\nCONSUMO POR VEICULO (placa, kWh no semestre):\n{consumo_placa}\n"
             f"\nRANKING DO PERIODO (6 meses — quem recarrega mais, paga mais):\n{bloco_rank}\n"
             f"\nRATEIO DO MES CORRENTE (nao confundir com o semestre):\n{bloco_rateio}\n"
             f"\nANOMALIAS RECENTES:\n{bloco_anom}\n"
@@ -1309,6 +1323,11 @@ class EVChargeOps:
                     status="finalizada",
                     tipo_tarifa=row.get("tipo_tarifa", "fora_ponta"),
                     potencia_media_kw=float(row.get("potencia_kw") or carregador.potencia_kw),
+                    placa=row.get("placa", ""),
+                    veiculo_marca=row.get("marca", ""),
+                    veiculo_modelo=row.get("modelo_veiculo", ""),
+                    bateria_kwh=float(row.get("bateria_kwh") or 0),
+                    autonomia_km=float(row.get("autonomia_km") or 0),
                 )
                 self.gerenciador.sessoes.append(sessao)
                 carregador.energia_acumulada_kwh += energia
@@ -1397,6 +1416,71 @@ class EVChargeOps:
             "tabela_mensal": tabela_mensal,
             "tabela_diaria_recente": tabela_diaria,
             "n_dias": len(datas),
+        }
+
+    def montar_frota_historica(self) -> dict:
+        """Empacota cadastro, eventos e kWh por placa para o GPT."""
+        import csv
+
+        pasta = Path(__file__).resolve().parent.parent / "dados"
+        path_cad = pasta / "frota_cadastro_6meses.csv"
+        path_evt = pasta / "frota_eventos_6meses.csv"
+        path_ses = pasta / "consumo_sessoes_6meses.csv"
+
+        linhas_ativas = []
+        if path_cad.is_file():
+            with path_cad.open(newline="", encoding="utf-8") as fh:
+                for row in csv.DictReader(fh):
+                    janela = row["data_inicio"]
+                    if row.get("data_fim"):
+                        janela += f" a {row['data_fim']}"
+                    else:
+                        janela += " a 2026-10-04 (ativo)"
+                    linhas_ativas.append(
+                        f"  - {row['unidade']}-{row['bloco']} {row['proprietario']}: "
+                        f"{row['marca']} {row['modelo']} placa {row['placa']}, "
+                        f"{row['bateria_kwh']} kWh / {row['autonomia_km']} km, "
+                        f"{janela} [{row.get('status', '')}]"
+                    )
+
+        linhas_evt = []
+        if path_evt.is_file():
+            with path_evt.open(newline="", encoding="utf-8") as fh:
+                for row in csv.DictReader(fh):
+                    if row.get("evento") == "cadastro_inicial":
+                        continue
+                    linhas_evt.append(
+                        f"  - {row['data']} {row['unidade']}-{row['bloco']} "
+                        f"{row['proprietario']}: {row['evento']} "
+                        f"{row['marca']} {row['modelo']} ({row['placa']})"
+                    )
+
+        por_placa = defaultdict(lambda: {"kwh": 0.0, "sessoes": 0, "meta": None})
+        if path_ses.is_file():
+            with path_ses.open(newline="", encoding="utf-8") as fh:
+                for row in csv.DictReader(fh):
+                    placa = row.get("placa") or ""
+                    if not placa:
+                        continue
+                    por_placa[placa]["kwh"] += float(row["kwh"])
+                    por_placa[placa]["sessoes"] += 1
+                    por_placa[placa]["meta"] = row
+
+        linhas_cons = []
+        for placa, info in sorted(por_placa.items(), key=lambda x: -x[1]["kwh"]):
+            m = info["meta"] or {}
+            linhas_cons.append(
+                f"  - {placa} {m.get('marca', '')} {m.get('modelo_veiculo', '')} "
+                f"({m.get('unidade', '')}-{m.get('bloco', '')}): "
+                f"{info['sessoes']} sessoes, {info['kwh']:.1f} kWh, "
+                f"bateria {m.get('bateria_kwh', '')} kWh, "
+                f"autonomia {m.get('autonomia_km', '')} km"
+            )
+
+        return {
+            "frota_ativa": "\n".join(linhas_ativas) if linhas_ativas else "  (sem cadastro)",
+            "frota_eventos": "\n".join(linhas_evt) if linhas_evt else "  (sem compra/venda)",
+            "consumo_por_veiculo": "\n".join(linhas_cons) if linhas_cons else "  (sem sessoes por placa)",
         }
 
     # ---- CONSULTAS E RELATORIOS ----
@@ -1490,6 +1574,7 @@ class EVChargeOps:
         ranking.sort(key=lambda x: x["kwh"], reverse=True)
         rateio = self.faturamento.relatorio_rateio(self.unidades, sessoes_fin, mes)
         serie = self.montar_serie_historica(dias_recentes=14)
+        frota = self.montar_frota_historica()
 
         dados_sindico = {
             "condominio": dashboard.get("condominio", getattr(self.condominio, "nome", "")),
@@ -1511,6 +1596,9 @@ class EVChargeOps:
             "rateio_mes": rateio,
             "tabela_mensal": serie["tabela_mensal"],
             "tabela_diaria_recente": serie["tabela_diaria_recente"],
+            "frota_ativa": frota["frota_ativa"],
+            "frota_eventos": frota["frota_eventos"],
+            "consumo_por_veiculo": frota["consumo_por_veiculo"],
         }
 
         return {

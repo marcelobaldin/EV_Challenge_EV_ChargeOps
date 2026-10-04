@@ -1,0 +1,16 @@
+placa,marca,modelo,bateria_kwh,autonomia_km,unidade,bloco,proprietario,data_inicio,data_fim,status
+UDA4H28,BYD,Dolphin Mini,38.0,280,101,A,Ana Silva,2026-04-01,,ativo
+EXD8C75,Tesla,Model 3 RWD,60.0,450,102,A,Bruno Costa,2026-04-01,,ativo
+NBA1G29,Chevrolet,Bolt EUV,65.0,400,102,A,Bruno Costa,2026-04-01,2026-08-18,vendido
+QTA8G91,BMW,iX1,66.5,430,102,A,Bruno Costa,2026-06-08,,ativo
+UWR6H57,GWM,Ora 03 Skin,48.0,310,201,A,Carla Mendes,2026-04-01,,ativo
+SIZ0Y20,Volvo,EX30,51.0,340,201,A,Carla Mendes,2026-06-15,,ativo
+WNK4E27,Nissan,Leaf,40.0,270,202,A,Daniel Oliveira,2026-04-01,2026-07-20,vendido
+YKD1M12,Fiat,500e,42.0,300,202,A,Daniel Oliveira,2026-08-05,,ativo
+LLT4Z05,BYD,Seal,82.5,520,301,B,Elena Souza,2026-04-01,,ativo
+XOR1M10,BYD,Yuan Plus,60.5,430,301,B,Elena Souza,2026-05-10,,ativo
+RJU9L73,Renault,Kwid E-Tech,26.8,185,302,B,Felipe Santos,2026-04-01,2026-09-12,vendido
+GWC0V29,Caoa Chery,iCar,31.0,250,401,B,Gabriela Lima,2026-04-01,2026-07-08,vendido
+YJC3D48,Peugeot,e-208,51.0,360,401,B,Gabriela Lima,2026-08-01,,ativo
+IOU5F47,JAC,e-JS1,30.2,300,402,B,Henrique Rocha,2026-04-01,,ativo
+LGV4W87,Hyundai,Ioniq 5,77.4,480,402,B,Henrique Rocha,2026-09-01,,ativo

@@ -66,7 +66,7 @@ Abrir http://localhost:5050
 | `sindico` | `senha` | Painel operacional + Síndico Virtual |
 | `administrador` | `senha` | Faturas, rateio e exportação CSV |
 
-O servidor sobe com o condomínio demo (8 unidades, 4 carregadores) e carrega `dados/consumo_sessoes_6meses.csv` (abr–set/2026 + 1–4/out, semente 42). Para regenerar a série:
+O servidor sobe com o condomínio demo (8 unidades, 4 carregadores) e carrega `dados/consumo_sessoes_6meses.csv` (abr–set/2026 + 1–4/out, semente 42). Cada sessão aponta para um veículo cadastrado naquele dia (marca, modelo, bateria, autonomia, placa). A frota muda com compra e venda; apto sem carro no dia não recarrega. Para regenerar a série:
 
 ```bash
 cd prototipo
@@ -110,8 +110,11 @@ prototipo/
   templates/dashboard.html
 dados/
   consumo_diario_6meses.csv        ← 8 aptos × todos os dias (kWh pode ser 0)
-  consumo_sessoes_6meses.csv       ← sessões que alimentam o Motor de IA
+  consumo_sessoes_6meses.csv       ← sessões + veículo (placa, marca, bateria)
   consumo_mensal_6meses.csv        ← agregado mensal por unidade
+  frota_cadastro_6meses.csv        ← períodos de posse (0 a 3 carros/apto)
+  frota_eventos_6meses.csv         ← cadastro inicial, compra e venda
+  frota_diaria_6meses.csv          ← snapshot diário da frota
 evidencias/
   saida_prototipo.json
   rateio_unidades.csv
@@ -129,16 +132,15 @@ evidencias/
 
 ## Evidências de funcionamento (execução de 04/10/2026)
 
-Condomínio Residencial Parque Verde, mês de referência 2026-10:
+Condomínio Residencial Parque Verde, série 2026-04-01 a 2026-10-04:
 
-- 177 sessões no lote JSON (semente 42); a interface web sobe com **180 sessões**, **5.827,4 kWh** e **R$ 5.134,55** nos 30 dias.
-- Rateio mensal (outubro/2026, só sessões daquele mês): **R$ 671,63** (energia + 5% de taxa administrativa).
-- Unidade de maior consumo no mês: 301-B (Elena Souza), 185,73 kWh, R$ 165,76. No ranking dos 30 dias ela continua em 1º (1.081,7 kWh, R$ 987,27).
-- Interpretação: sessões classificadas (ex.: baixa eficiência 66% com alerta de cabo; consumo > 60 kWh).
-- Previsão IA: média 199,9 kWh/dia, tendência crescente (+39,4%), **5.997,6 kWh** no horizonte de 30 dias; alerta de carregador adicional.
-- Síndico Virtual responde consumo, rateio e disponibilidade dos 4 carregadores com os dados da execução.
+- **952 sessões**, **28.501,4 kWh** no semestre (semente 42), com veículo (placa, marca, bateria, autonomia) em cada linha.
+- Frota: 15 períodos de posse, teto de 3 carros/apto; 11 ativos em 04/10; 60 dias-apto sem carro (venda sem reposição imediata).
+- Rateio do mês corrente (outubro/2026, energia + 5%): ver `evidencias/rateio_unidades.csv`.
+- Previsão IA (média móvel): tendência crescente, ~4.572 kWh no horizonte de 30 dias.
+- Síndico Virtual (OpenAI) recebe tabelas mensais, 14 dias, frota ativa, compra/venda e kWh por placa.
 
-Arquivos em `evidencias/`.
+Arquivos em `evidencias/` e `dados/`.
 
 ---
 

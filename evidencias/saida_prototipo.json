@@ -2,83 +2,83 @@
   "condominio": "Condominio Residencial Parque Verde",
   "carregadores": 4,
   "unidades": 8,
-  "sessoes_finalizadas": 177,
+  "sessoes_finalizadas": 952,
   "mes_referencia": "2026-10",
   "rateio": {
     "mes_referencia": "2026-10",
-    "total_condominio_reais": 671.63,
+    "total_condominio_reais": 634.12,
     "rateio_por_unidade": {
       "101": {
         "bloco": "A",
         "proprietario": "Ana Silva",
-        "sessoes": 3,
-        "kwh": 119.66,
-        "energia_reais": 101.71,
-        "taxa_admin": 5.09,
-        "custo": 106.8
+        "sessoes": 2,
+        "kwh": 38.67,
+        "energia_reais": 32.87,
+        "taxa_admin": 1.64,
+        "custo": 34.51
       },
       "102": {
         "bloco": "A",
         "proprietario": "Bruno Costa",
-        "sessoes": 1,
-        "kwh": 31.11,
-        "energia_reais": 26.44,
-        "taxa_admin": 1.32,
-        "custo": 27.76
+        "sessoes": 4,
+        "kwh": 106.46,
+        "energia_reais": 100.85,
+        "taxa_admin": 5.04,
+        "custo": 105.89
       },
       "201": {
         "bloco": "A",
         "proprietario": "Carla Mendes",
-        "sessoes": 1,
-        "kwh": 4.45,
-        "energia_reais": 3.78,
-        "taxa_admin": 0.19,
-        "custo": 3.97
+        "sessoes": 3,
+        "kwh": 112.12,
+        "energia_reais": 95.3,
+        "taxa_admin": 4.76,
+        "custo": 100.06
       },
       "202": {
         "bloco": "A",
         "proprietario": "Daniel Oliveira",
         "sessoes": 2,
-        "kwh": 61.11,
-        "energia_reais": 65.76,
-        "taxa_admin": 3.29,
-        "custo": 69.05
+        "kwh": 64.51,
+        "energia_reais": 54.83,
+        "taxa_admin": 2.74,
+        "custo": 57.57
       },
       "301": {
         "bloco": "B",
         "proprietario": "Elena Souza",
         "sessoes": 4,
-        "kwh": 185.73,
-        "energia_reais": 157.87,
-        "taxa_admin": 7.89,
-        "custo": 165.76
+        "kwh": 158.61,
+        "energia_reais": 134.81,
+        "taxa_admin": 6.74,
+        "custo": 141.55
       },
       "302": {
         "bloco": "B",
         "proprietario": "Felipe Santos",
-        "sessoes": 3,
-        "kwh": 105.93,
-        "energia_reais": 90.04,
-        "taxa_admin": 4.5,
-        "custo": 94.54
+        "sessoes": 0,
+        "kwh": 0,
+        "energia_reais": 0,
+        "taxa_admin": 0.0,
+        "custo": 0.0
       },
       "401": {
         "bloco": "B",
         "proprietario": "Gabriela Lima",
-        "sessoes": 4,
-        "kwh": 148.27,
-        "energia_reais": 145.82,
-        "taxa_admin": 7.29,
-        "custo": 153.11
+        "sessoes": 3,
+        "kwh": 82.75,
+        "energia_reais": 80.96,
+        "taxa_admin": 4.05,
+        "custo": 85.01
       },
       "402": {
         "bloco": "B",
         "proprietario": "Henrique Rocha",
-        "sessoes": 1,
-        "kwh": 47.28,
-        "energia_reais": 48.23,
-        "taxa_admin": 2.41,
-        "custo": 50.64
+        "sessoes": 3,
+        "kwh": 122.71,
+        "energia_reais": 104.31,
+        "taxa_admin": 5.22,
+        "custo": 109.53
       }
     }
   },
@@ -86,151 +86,147 @@
     {
       "unidade": "101-A",
       "proprietario": "Ana Silva",
-      "sessoes": 3,
-      "kwh": 119.66,
-      "reais": 106.8,
+      "sessoes": 2,
+      "kwh": 38.67,
+      "reais": 34.51,
       "status": "fechada"
     },
     {
       "unidade": "102-A",
       "proprietario": "Bruno Costa",
-      "sessoes": 1,
-      "kwh": 31.11,
-      "reais": 27.76,
+      "sessoes": 4,
+      "kwh": 106.46,
+      "reais": 105.89,
       "status": "fechada"
     },
     {
       "unidade": "201-A",
       "proprietario": "Carla Mendes",
-      "sessoes": 1,
-      "kwh": 4.45,
-      "reais": 3.97,
+      "sessoes": 3,
+      "kwh": 112.12,
+      "reais": 100.06,
       "status": "fechada"
     },
     {
       "unidade": "202-A",
       "proprietario": "Daniel Oliveira",
       "sessoes": 2,
-      "kwh": 61.11,
-      "reais": 69.05,
+      "kwh": 64.51,
+      "reais": 57.57,
       "status": "fechada"
     },
     {
       "unidade": "301-B",
       "proprietario": "Elena Souza",
       "sessoes": 4,
-      "kwh": 185.73,
-      "reais": 165.76,
+      "kwh": 158.61,
+      "reais": 141.55,
       "status": "fechada"
     },
     {
       "unidade": "302-B",
       "proprietario": "Felipe Santos",
-      "sessoes": 3,
-      "kwh": 105.93,
-      "reais": 94.54,
+      "sessoes": 0,
+      "kwh": 0,
+      "reais": 0.0,
       "status": "fechada"
     },
     {
       "unidade": "401-B",
       "proprietario": "Gabriela Lima",
-      "sessoes": 4,
-      "kwh": 148.27,
-      "reais": 153.11,
+      "sessoes": 3,
+      "kwh": 82.75,
+      "reais": 85.01,
       "status": "fechada"
     },
     {
       "unidade": "402-B",
       "proprietario": "Henrique Rocha",
-      "sessoes": 1,
-      "kwh": 47.28,
-      "reais": 50.64,
+      "sessoes": 3,
+      "kwh": 122.71,
+      "reais": 109.53,
       "status": "fechada"
     }
   ],
   "ia_interpretacao_amostra": [
     {
-      "sessao_id": "3b7ee728",
-      "duracao_horas": 1.06,
-      "eficiencia_pct": 87.3,
+      "sessao_id": "7be963e4",
+      "duracao_horas": 3.65,
+      "eficiencia_pct": 76.0,
       "classificacao": "normal",
       "alertas": [],
-      "interpretacao": "Sessao 3b7ee728: 10.2 kWh em 1.1h (normal)"
+      "interpretacao": "Sessao 7be963e4: 19.4 kWh em 3.6h (normal)"
     },
     {
-      "sessao_id": "922463c3",
-      "duracao_horas": 1.02,
-      "eficiencia_pct": 72.0,
+      "sessao_id": "e106364c",
+      "duracao_horas": 2.54,
+      "eficiencia_pct": 71.3,
       "classificacao": "normal",
       "alertas": [],
-      "interpretacao": "Sessao 922463c3: 16.1 kWh em 1.0h (normal)"
+      "interpretacao": "Sessao e106364c: 39.9 kWh em 2.5h (normal)"
     },
     {
-      "sessao_id": "820d5932",
-      "duracao_horas": 4.36,
-      "eficiencia_pct": 77.6,
+      "sessao_id": "79492882",
+      "duracao_horas": 2.22,
+      "eficiencia_pct": 89.5,
       "classificacao": "normal",
       "alertas": [],
-      "interpretacao": "Sessao 820d5932: 37.2 kWh em 4.4h (normal)"
+      "interpretacao": "Sessao 79492882: 43.7 kWh em 2.2h (normal)"
     },
     {
-      "sessao_id": "e08f62e3",
-      "duracao_horas": 4.93,
-      "eficiencia_pct": 86.0,
+      "sessao_id": "4a9d781d",
+      "duracao_horas": 2.07,
+      "eficiencia_pct": 77.8,
       "classificacao": "normal",
       "alertas": [],
-      "interpretacao": "Sessao e08f62e3: 46.6 kWh em 4.9h (normal)"
+      "interpretacao": "Sessao 4a9d781d: 17.7 kWh em 2.1h (normal)"
     },
     {
-      "sessao_id": "b177343e",
-      "duracao_horas": 5.76,
-      "eficiencia_pct": 75.1,
+      "sessao_id": "a5efe2b1",
+      "duracao_horas": 3.69,
+      "eficiencia_pct": 87.4,
       "classificacao": "normal",
       "alertas": [],
-      "interpretacao": "Sessao b177343e: 47.6 kWh em 5.8h (normal)"
+      "interpretacao": "Sessao a5efe2b1: 22.6 kWh em 3.7h (normal)"
     },
     {
-      "sessao_id": "1c1257e3",
-      "duracao_horas": 2.39,
-      "eficiencia_pct": 72.9,
+      "sessao_id": "b1f05cc6",
+      "duracao_horas": 1.76,
+      "eficiencia_pct": 91.5,
       "classificacao": "normal",
       "alertas": [],
-      "interpretacao": "Sessao 1c1257e3: 12.2 kWh em 2.4h (normal)"
+      "interpretacao": "Sessao b1f05cc6: 35.4 kWh em 1.8h (normal)"
     },
     {
-      "sessao_id": "950fb564",
-      "duracao_horas": 5.85,
-      "eficiencia_pct": 76.4,
+      "sessao_id": "a298e19a",
+      "duracao_horas": 2.28,
+      "eficiencia_pct": 86.5,
       "classificacao": "normal",
-      "alertas": [
-        "Consumo elevado (>60 kWh) - veiculo com bateria grande ou recarga completa"
-      ],
-      "interpretacao": "Sessao 950fb564: 98.3 kWh em 5.9h (normal)"
+      "alertas": [],
+      "interpretacao": "Sessao a298e19a: 43.4 kWh em 2.3h (normal)"
     },
     {
-      "sessao_id": "ae0302fa",
-      "duracao_horas": 4.38,
-      "eficiencia_pct": 66.4,
-      "classificacao": "baixa_eficiencia",
-      "alertas": [
-        "Eficiencia de 66% - verificar conexao do cabo"
-      ],
-      "interpretacao": "Sessao ae0302fa: 31.9 kWh em 4.4h (baixa_eficiencia)"
+      "sessao_id": "4d28e23f",
+      "duracao_horas": 3.08,
+      "eficiencia_pct": 89.4,
+      "classificacao": "normal",
+      "alertas": [],
+      "interpretacao": "Sessao 4d28e23f: 30.3 kWh em 3.1h (normal)"
     }
   ],
   "ia_previsao": {
-    "consumo_medio_diario_kwh": 199.9,
-    "tendencia_pct": 39.4,
+    "consumo_medio_diario_kwh": 152.4,
+    "tendencia_pct": 24.9,
     "direcao_tendencia": "crescente",
-    "previsao_mensal_kwh": 5997.6,
-    "pico_estimado_kwh_dia": 453.0,
-    "media_sessoes_dia": 5.9,
+    "previsao_mensal_kwh": 4572.4,
+    "pico_estimado_kwh_dia": 405.8,
+    "media_sessoes_dia": 5.1,
     "necessita_expansao": true,
     "recomendacao": "ALERTA: Considerar instalacao de carregador adicional. Pico estimado excede capacidade otima."
   },
   "sindico_virtual": {
-    "Quanto o condominio gastou em kWh?": "No periodo analisado, o condominio consumiu 5997.6 kWh no total, gerando um custo de R$ 5325.71. 8 unidades utilizaram os carregadores. O consumo medio por unidade foi de 749.7 kWh.",
-    "Como esta o rateio e as faturas?": "Existem 8 faturas abertas no valor total de R$ 671.63. O rateio e calculado automaticamente com base no consumo individual de cada unidade (kWh). A tarifa segue a precificacao dinamica da ANEEL: fora ponta (tarifa base), intermediaria (+20%) e ponta (+50%).",
+    "Quanto o condominio gastou em kWh?": "No periodo analisado, o condominio consumiu 28501.4 kWh no total, gerando um custo de R$ 26661.83. 8 unidades utilizaram os carregadores. O consumo medio por unidade foi de 3562.7 kWh.",
+    "Como esta o rateio e as faturas?": "Existem 8 faturas abertas no valor total de R$ 634.12. O rateio e calculado automaticamente com base no consumo individual de cada unidade (kWh). A tarifa segue a precificacao dinamica da ANEEL: fora ponta (tarifa base), intermediaria (+20%) e ponta (+50%).",
     "Precisamos de mais carregadores?": "Neste momento, 4 de 4 carregadores estao disponiveis. Todos os carregadores estao livres para uso."
   }
 }

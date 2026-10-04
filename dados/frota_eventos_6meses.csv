@@ -1,0 +1,20 @@
+data,unidade,bloco,proprietario,evento,placa,marca,modelo,bateria_kwh,autonomia_km
+2026-04-01,101,A,Ana Silva,cadastro_inicial,UDA4H28,BYD,Dolphin Mini,38.0,280
+2026-04-01,102,A,Bruno Costa,cadastro_inicial,EXD8C75,Tesla,Model 3 RWD,60.0,450
+2026-04-01,102,A,Bruno Costa,cadastro_inicial,NBA1G29,Chevrolet,Bolt EUV,65.0,400
+2026-04-01,201,A,Carla Mendes,cadastro_inicial,UWR6H57,GWM,Ora 03 Skin,48.0,310
+2026-04-01,202,A,Daniel Oliveira,cadastro_inicial,WNK4E27,Nissan,Leaf,40.0,270
+2026-04-01,301,B,Elena Souza,cadastro_inicial,LLT4Z05,BYD,Seal,82.5,520
+2026-04-01,302,B,Felipe Santos,cadastro_inicial,RJU9L73,Renault,Kwid E-Tech,26.8,185
+2026-04-01,401,B,Gabriela Lima,cadastro_inicial,GWC0V29,Caoa Chery,iCar,31.0,250
+2026-04-01,402,B,Henrique Rocha,cadastro_inicial,IOU5F47,JAC,e-JS1,30.2,300
+2026-05-10,301,B,Elena Souza,compra,XOR1M10,BYD,Yuan Plus,60.5,430
+2026-06-08,102,A,Bruno Costa,compra,QTA8G91,BMW,iX1,66.5,430
+2026-06-15,201,A,Carla Mendes,compra,SIZ0Y20,Volvo,EX30,51.0,340
+2026-07-08,401,B,Gabriela Lima,venda,GWC0V29,Caoa Chery,iCar,31.0,250
+2026-07-20,202,A,Daniel Oliveira,venda,WNK4E27,Nissan,Leaf,40.0,270
+2026-08-01,401,B,Gabriela Lima,compra,YJC3D48,Peugeot,e-208,51.0,360
+2026-08-05,202,A,Daniel Oliveira,compra,YKD1M12,Fiat,500e,42.0,300
+2026-08-18,102,A,Bruno Costa,venda,NBA1G29,Chevrolet,Bolt EUV,65.0,400
+2026-09-01,402,B,Henrique Rocha,compra,LGV4W87,Hyundai,Ioniq 5,77.4,480
+2026-09-12,302,B,Felipe Santos,venda,RJU9L73,Renault,Kwid E-Tech,26.8,185
