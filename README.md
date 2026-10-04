@@ -5,7 +5,7 @@
 **Fase 6 — Comunicação Interplanetária**  
 **Prazo:** 13/10/2026
 
-Protótipo funcional da plataforma de gestão compartilhada de recarga de veículos elétricos em condomínios. Implementa a arquitetura, o rateio e o Motor de IA definidos na Sprint 01.
+Protótipo funcional da plataforma de gestão compartilhada de recarga de veículos elétricos em condomínios. Implementa a arquitetura, o rateio e o Motor de IA definidos na Sprint 01 e evolui o MVP com série de 6 meses, frota por unidade, Síndico Virtual na OpenAI e previsão por regressão múltipla.
 
 Repositório: https://github.com/marcelobaldin/EV_Challenge_EV_ChargeOps
 
@@ -42,15 +42,42 @@ O Motor de IA não é um chat decorativo. Ele entra no fluxo:
 | Dimensão | Papel no protótipo |
 |---|---|
 | Interpretação | Classifica sessão (normal / prolongada / baixa eficiência) e gera alertas |
-| Preditividade | OLS vs Ridge/Lasso/ElasticNet; MAE, R², AIC, BIC; projeção 6 meses |
+| Preditividade | Regressão múltipla (OLS vs Ridge/Lasso/ElasticNet) no **kWh semanal por apto**; KPIs MAE, RMSE, MAPE, R², R² ajustado, AIC, AICc, BIC; projeção mês a mês dos próximos 6 meses |
 | Precificação | Calcula a tarifa de cada sessão no momento do encerramento |
 | Conversação | Síndico Virtual via **OpenAI** (`OPENAI_API_KEY`); Gemini e regras locais só como fallback |
 
 ---
 
+## O que esta versão entrega (além da Sprint 01)
+
+### 1. Série de 6 meses (abr/2026 a 04/out/2026)
+
+Gerador reproduzível (`gerar_consumo_6meses.py`, semente 42): 8 unidades, consumo diário (incluindo kWh = 0), sessões e agregado mensal. O Flask carrega `dados/consumo_sessoes_6meses.csv` na subida.
+
+### 2. Frota por condômino
+
+Cada apto pode ter **0 a 3 carros**. Há cadastro inicial, compra e venda no semestre. Sem carro no dia, não há sessão. Cada recarga grava placa, marca, modelo, bateria (kWh) e autonomia (km).
+
+### 3. Síndico Virtual na OpenAI
+
+O chat envia contexto RAG (não inventa número): totais do período, tabela mensal, últimos 14 dias, ranking do semestre, rateio só do mês corrente, frota ativa, eventos de compra/venda, kWh por placa, KPIs da regressão, projeção de 6 meses e recomendações derivadas.
+
+### 4. Motor de regressão (seção no painel do síndico)
+
+O kWh **diário** tem ~42% de zeros; o R² ajustado ficava ~0,25. O alvo passou a ser **kWh semanal por unidade** (tendência, nº de veículos, bateria, dummy de apto). Hold-out cronológico (corte ~semana 32/2026):
+
+| Modelo | R² teste | R² ajustado teste | MAE (kWh/semana) | AIC | BIC |
+|---|---|---|---|---|---|
+| OLS (antes) | 0,80 | **0,76** | 37,7 | 587 | 615 |
+| Ridge α = 8 (depois) | 0,81 | **0,77** | 36,1 | 585 | 612 |
+
+A seção **Regressão** mostra coeficientes, KPIs antes/depois, gráfico e tabela da projeção nov/2026–abr/2027 e as recomendações (expansão, ponta, apto sem carro). Essas recomendações alimentam o Síndico Virtual.
+
+---
+
 ## Como executar
 
-Requisitos: Python 3.10+ (testado com Anaconda). Dependências em `prototipo/requirements.txt`.
+Requisitos: Python 3.10+ (testado com Anaconda). Dependências em `prototipo/requirements.txt` (Flask, OpenAI, matplotlib, numpy, scikit-learn).
 
 ```bash
 cd prototipo
@@ -63,24 +90,24 @@ Abrir http://localhost:5050
 | Usuário | Senha | Perfil |
 |---|---|---|
 | `morador` | `senha` | Ana Silva, unidade 101-A |
-| `sindico` | `senha` | Painel operacional + Síndico Virtual |
+| `sindico` | `senha` | Dashboard, ranking, análise IA, **Regressão**, Síndico Virtual |
 | `administrador` | `senha` | Faturas, rateio e exportação CSV |
 
-O servidor sobe com o condomínio demo (8 unidades, 4 carregadores) e carrega `dados/consumo_sessoes_6meses.csv` (abr–set/2026 + 1–4/out, semente 42). Cada sessão aponta para um veículo cadastrado naquele dia (marca, modelo, bateria, autonomia, placa). A frota muda com compra e venda; apto sem carro no dia não recarrega. Para regenerar a série:
+O servidor sobe com o condomínio demo (8 unidades, 4 carregadores), carrega as 952 sessões dos 6 meses e treina a regressão na inicialização.
+
+Para regenerar a série de consumo e a frota:
 
 ```bash
 cd prototipo
 python gerar_consumo_6meses.py
 ```
 
-Para regenerar as evidências em lote (JSON, CSV e gráfico), sem abrir o navegador:
+Para regenerar evidências em lote (JSON, CSV e gráfico):
 
 ```bash
 cd prototipo
 python gerar_evidencias.py
 ```
-
-Saídas em `evidencias/`.
 
 O Síndico Virtual usa a API da OpenAI (padrão: `gpt-4o-mini`). Crie `prototipo/.env` (não versionado) com:
 
@@ -89,7 +116,7 @@ OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o-mini
 ```
 
-Sem a chave, tenta Gemini (`GEMINI_API_KEY`) e, por último, o fallback local por regras — o módulo de IA continua estrutural.
+Sem a chave, tenta Gemini (`GEMINI_API_KEY`) e, por último, o fallback local por regras.
 
 ---
 
@@ -103,19 +130,19 @@ sprint01_pesquisa_documentacao.md  ← base da Sprint 01 (reaproveitada)
 prototipo/
   ev_chargeops.py                  ← núcleo (sessões, Modbus, IA, rateio)
   app_ev_chargeops.py              ← Flask na porta 5050
-  gerar_consumo_6meses.py          ← gera a série de 6 meses (semente 42)
-  motor_regressao.py               ← OLS vs Ridge/Lasso/ElasticNet + projeção 6 meses
+  gerar_consumo_6meses.py          ← série de 6 meses + frota (semente 42)
+  motor_regressao.py               ← OLS vs Ridge/Lasso/ElasticNet + projeção
   gerar_evidencias.py
   requirements.txt
   templates/login.html
-  templates/dashboard.html
+  templates/dashboard.html         ← inclui a seção Regressão do síndico
 dados/
-  consumo_diario_6meses.csv        ← 8 aptos × todos os dias (kWh pode ser 0)
-  consumo_sessoes_6meses.csv       ← sessões + veículo (placa, marca, bateria)
-  consumo_mensal_6meses.csv        ← agregado mensal por unidade
-  frota_cadastro_6meses.csv        ← períodos de posse (0 a 3 carros/apto)
-  frota_eventos_6meses.csv         ← cadastro inicial, compra e venda
-  frota_diaria_6meses.csv          ← snapshot diário da frota
+  consumo_diario_6meses.csv
+  consumo_sessoes_6meses.csv
+  consumo_mensal_6meses.csv
+  frota_cadastro_6meses.csv
+  frota_eventos_6meses.csv
+  frota_diaria_6meses.csv
 evidencias/
   saida_prototipo.json
   rateio_unidades.csv
@@ -135,11 +162,11 @@ evidencias/
 
 Condomínio Residencial Parque Verde, série 2026-04-01 a 2026-10-04:
 
-- **952 sessões**, **28.501,4 kWh** no semestre (semente 42), com veículo (placa, marca, bateria, autonomia) em cada linha.
-- Frota: 15 períodos de posse, teto de 3 carros/apto; 11 ativos em 04/10; 60 dias-apto sem carro (venda sem reposição imediata).
-- Rateio do mês corrente (outubro/2026, energia + 5%): ver `evidencias/rateio_unidades.csv`.
-- Previsão IA (regressão múltipla, Lasso regularizado no hold-out): MAE/R²/AIC/BIC na seção **Regressão** do síndico; projeção nov/2026–abr/2027 alimenta as recomendações.
-- Síndico Virtual (OpenAI) recebe tabelas mensais, 14 dias, frota ativa, compra/venda e kWh por placa.
+- **952 sessões**, **28.501,4 kWh** no semestre (semente 42), cada linha com veículo.
+- Frota: 15 períodos de posse, teto de 3 carros/apto; 11 ativos em 04/10; 60 dias-apto sem carro.
+- Rateio do mês corrente (outubro/2026, energia + 5%): `evidencias/rateio_unidades.csv`.
+- Regressão semanal: Ridge (α = 8), R² ajustado de teste **77%** (OLS 76%). Projeção nov/2026–abr/2027 na ordem de 5,3–6,0 mil kWh/mês.
+- Síndico Virtual (OpenAI) recebe histórico, frota, KPIs e a projeção.
 
 Arquivos em `evidencias/` e `dados/`.
 
@@ -153,11 +180,11 @@ A Sprint 02 implementa o que foi planejado: Python, in-memory, tarifa dinâmica,
 |---|---|---|
 | OCPP 1.6J real (WebSocket) | Ciclo de sessão + mapa Modbus simulado | Sem hardware HCA G2 no ambiente do aluno; o mapa de registradores (10000–30015) está modelado no simulador |
 | PostgreSQL em produção | Estruturas em memória | Decisão Q5 da Sprint 01: in-memory no MVP |
-| EWMA / Prophet / scikit-learn | OLS + Ridge/Lasso/ElasticNet no kWh diário por apto | Hold-out cronológico; KPIs MAE/R²/AIC/BIC; seção Regressão no painel do síndico |
-| Tarifa com fator de demanda e bandeira | Ponta / intermediária / fora ponta | Os fatores 1,5 e 1,2 já diferenciam o kWh; bandeira e ocupação simultânea entram na evolução |
-| Roadmap: IA em mar/2027 e dashboard em jun/2027 | IA 4D + Flask já nesta sprint | O edital da Sprint 02 exige protótipo com lógica, IA estrutural e evidência; o dashboard foi antecipado |
-| Integração Superlógica / Condomob | Exportação CSV | Formato que a administradora já consome; API fica para v1.0 |
-| Gemini obrigatório | OpenAI no Síndico Virtual; Gemini e regras locais como fallback | A chave fica em `prototipo/.env` (fora do Git); o restante da IA 4D continua local |
+| EWMA / Prophet | OLS + Ridge/Lasso/ElasticNet no **kWh semanal** por apto | O diário tem ~42% de zeros e R² ~0,28; a semana atinge R² ajustado > 0,70 no hold-out |
+| Tarifa com fator de demanda e bandeira | Ponta / intermediária / fora ponta | Os fatores 1,5 e 1,2 já diferenciam o kWh |
+| Roadmap: IA em mar/2027 e dashboard em jun/2027 | IA 4D + Flask + seção de regressão já nesta sprint | O edital da Sprint 02 exige protótipo com lógica, IA estrutural e evidência |
+| Integração Superlógica / Condomob | Exportação CSV | Formato que a administradora já consome |
+| Gemini obrigatório | OpenAI no Síndico Virtual; Gemini e regras locais como fallback | A chave fica em `prototipo/.env` (fora do Git) |
 
 O que **não** desviou: linguagem Python, autenticação RFID, tarifa alinhada à RN ANEEL 1.000/2021, fórmula `Σ(kWh × tarifa) + 5%`, Síndico Virtual com dados reais do condomínio, e o HCA G2 como hardware de referência.
 
@@ -165,7 +192,7 @@ O que **não** desviou: linguagem Python, autenticação RFID, tarifa alinhada �
 
 ## Uso de IA no desenvolvimento
 
-Ferramentas de IA apoiaram organização do repositório, geração das evidências e o roteiro do pitch. A lógica de negócio (sessão, Modbus, tarifa, rateio, as quatro dimensões do MotorIA) é a da Sprint 01, reaproveitada da Fase III e compreendida pela equipe. Trechos gerados foram lidos, adaptados e testados.
+Ferramentas de IA apoiaram organização do repositório, geração das evidências, o motor de regressão e o roteiro do pitch. A lógica de negócio (sessão, Modbus, tarifa, rateio, as quatro dimensões do MotorIA) é a da Sprint 01, reaproveitada da Fase III e compreendida pela equipe. Trechos gerados foram lidos, adaptados e testados.
 
 ---
 
@@ -174,7 +201,7 @@ Ferramentas de IA apoiaram organização do repositório, geração das evidênc
 | Critério | Onde está |
 |---|---|
 | Lógica central (sessões, consumo, rateio) | `ev_chargeops.py` (`GerenciadorSessoes`, `MotorFaturamento`) + tela de rateio |
-| IA estrutural | `MotorIA` (interpretação, previsão, tarifa no encerramento da sessão, Síndico Virtual) |
-| Evidência | `evidencias/` (JSON, CSV, PNG, capturas da interface) |
+| IA estrutural | `MotorIA` + `motor_regressao.py` + Síndico Virtual (OpenAI) + seção Regressão |
+| Evidência | `evidencias/` e `dados/` (série, frota, JSON, CSV, PNG) |
 | Autoria | Código da Sprint 01 evoluído; taxa de 5% alinhada ao documento; README com desvios |
-| README e organização | Esta pasta, `prototipo/` separado de `evidencias/` |
+| README e organização | Esta pasta, `prototipo/` separado de `dados/` e `evidencias/` |
