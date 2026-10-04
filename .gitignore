@@ -5,3 +5,4 @@ __pycache__/
 .DS_Store
 .env
 *.env
+prototipo/gerar_entregaveis_sprint02.py

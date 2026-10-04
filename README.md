@@ -136,7 +136,6 @@ prototipo/
   app_ev_chargeops.py              ← Flask na porta 5050
   gerar_consumo_6meses.py          ← série de 6 meses + frota (semente 42)
   motor_regressao.py               ← OLS vs Ridge/Lasso/ElasticNet + projeção
-  gerar_entregaveis_sprint02.py    ← PDF, PPTX, gráficos e relatório MD
   gerar_evidencias.py
   requirements.txt
   templates/login.html

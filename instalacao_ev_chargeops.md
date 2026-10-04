@@ -70,7 +70,6 @@ Sem a chave, tenta Gemini (`GEMINI_API_KEY`) e, por último, o fallback local po
 cd prototipo
 python gerar_consumo_6meses.py      # série + frota (semente 42)
 python gerar_evidencias.py          # JSON, CSV, gráfico de rateio
-python gerar_entregaveis_sprint02.py  # PDF, PPTX, gráficos, relatório MD
 ```
 
 ---
